@@ -1,35 +1,44 @@
-import React, { useState } from "react"; //
-import {
-  View,
-  Button,
-  Alert,
-  StyleSheet,
-  TouchableOpacity,
-  Text,
-} from "react-native"; //
-import { Card, Title, Paragraph, TextInput } from "react-native-paper"; //
-import axios from "axios"; //
-import AsyncStorage from "@react-native-async-storage/async-storage"; //
+import React, { useState } from "react";
+import { View, StyleSheet, TouchableOpacity, Text, Alert } from "react-native";
+import { Card, Title, Paragraph, TextInput, Button } from "react-native-paper";
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const LoginScreen = ({ navigation, setUser }) => {
-  const [username, setUsername] = useState(""); //
-  const [password, setPassword] = useState(""); //
+// Thêm navigation vào props
+const LoginScreen = ({ setUser, navigation }) => {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    try {
-      // Lưu ý: Thay đổi IP bên dưới thành IP máy tính của bạn
-      const response = await axios.post("http://192.168.1.10:5000/api/login", {
-        username,
-        password,
-      }); //
+    if (!username || !password) {
+      Alert.alert("Lỗi", "Vui lòng nhập đầy đủ tài khoản và mật khẩu");
+      return;
+    }
 
-      setUser(true); // Cập nhật trạng thái đã đăng nhập
-      await AsyncStorage.setItem("token", response.data.token); // Lưu token để duy trì phiên đăng nhập
-      Alert.alert("Login Successful", "Chào mừng bạn quay trở lại!"); //
-      navigation.navigate("Home"); //
+    setLoading(true);
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/api/login",
+        { username, password },
+        { timeout: 5000 },
+      );
+
+      if (response.data && response.data.token) {
+        await AsyncStorage.setItem("token", response.data.token);
+        setUser(true);
+      }
     } catch (error) {
-      console.error(error.response.data); //
-      Alert.alert("Login Failed", "Invalid username or password"); //
+      if (error.response) {
+        Alert.alert(
+          "Thất bại",
+          error.response.data.message || "Tài khoản không đúng",
+        );
+      } else {
+        Alert.alert("Lỗi mạng", "Không thể kết nối đến máy chủ.");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -37,33 +46,46 @@ const LoginScreen = ({ navigation, setUser }) => {
     <View style={styles.container}>
       <Card style={styles.card}>
         <Card.Content>
-          <Title style={styles.title}>Login</Title>
+          <Title style={styles.title}>Đăng Nhập</Title>
           <Paragraph style={styles.paragraph}>
-            Please enter your credentials
+            Nhập thông tin để tiếp tục
           </Paragraph>
+
           <TextInput
-            style={styles.input}
-            placeholder="Username"
+            label="Tên đăng nhập"
             value={username}
             onChangeText={setUsername}
             mode="outlined"
-          />
-          <TextInput
-            label="Password" // Paper dùng label thay vì placeholder
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={true} // BẮT BUỘC phải có dấu { }
-            mode="outlined" // Thuộc tính này hợp lệ với Paper
             style={styles.input}
           />
-          <Button title="Login" onPress={handleLogin} color="#6200ee" />
+          <TextInput
+            label="Mật khẩu"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            mode="outlined"
+            style={styles.input}
+          />
 
+          <Button
+            mode="contained"
+            onPress={handleLogin}
+            loading={loading}
+            style={styles.button}
+            buttonColor="#6200ee"
+          >
+            ĐĂNG NHẬP
+          </Button>
+
+          {/* Sửa lại phần TouchableOpacity để chuyển sang trang Register */}
           <TouchableOpacity
             style={styles.registerButton}
             onPress={() => navigation.navigate("Register")}
           >
-            <Text style={{ color: "#03dac6", textAlign: "center" }}>
-              Don't have an account? Register
+            <Text
+              style={{ color: "#6200ee", textAlign: "center", marginTop: 10 }}
+            >
+              Chưa có tài khoản? Đăng ký ngay
             </Text>
           </TouchableOpacity>
         </Card.Content>
@@ -78,12 +100,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 20,
     backgroundColor: "#f5f5f5",
-  }, //
-  card: { padding: 20, borderRadius: 8, elevation: 4 }, //
-  title: { fontSize: 24, marginBottom: 10, textAlign: "center" }, //
-  paragraph: { marginBottom: 20, textAlign: "center" }, //
-  input: { marginBottom: 15, backgroundColor: "#fff" }, //
-  registerButton: { marginTop: 15 }, //
+  },
+  card: { padding: 10, borderRadius: 12, elevation: 5 },
+  title: {
+    fontSize: 26,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 5,
+  },
+  paragraph: { marginBottom: 25, textAlign: "center", color: "#666" },
+  input: { marginBottom: 15 },
+  button: { marginTop: 10, paddingVertical: 6 },
+  registerButton: { marginTop: 15 },
 });
 
 export default LoginScreen;

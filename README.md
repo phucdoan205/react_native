@@ -13,3 +13,6 @@ npx expo install expo@54
 
 # Tự động sửa lỗi các thư viện đi kèm (react, react-native,...) cho khớp
 npx expo install --fix
+
+# mongoDB, framework express cho nodejs
+npm install express mongoose bcryptjs cors body-parser axios @react-navigation/native @react-navigation/stack @react-native-async-storage/async-storage react-native-paper jsonwebtoken react-native-vector-icons
