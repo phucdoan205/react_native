@@ -1,148 +1,292 @@
-
 import React from "react";
 import {
   View,
-  TextInput,
-  Button,
-  Alert,
-  Image,
   ScrollView,
   StyleSheet,
   Text,
+  Image,
+  TouchableOpacity,
+  Dimensions,
 } from "react-native";
-import Icon from "react-native-vector-icons/FontAwesome";
-import MaterialIcon from "react-native-vector-icons/MaterialIcons";
+import {
+  TextInput,
+  Avatar,
+  Card,
+  IconButton,
+  Button,
+  Divider,
+} from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const HomeScreen = ({ navigation }) => {
+const { width } = Dimensions.get("window");
+const isWeb = width > 768;
+
+const HomeScreen = ({ navigation, setUser }) => {
   const handleLogout = async () => {
-    await AsyncStorage.removeItem("token");
-    navigation.navigate("Login");
+    try {
+      await AsyncStorage.removeItem("token");
+      // Quan trọng: Cập nhật lại state setUser ở App.js để reset stack điều hướng
+      if (setUser) {
+        setUser(false);
+      } else {
+        navigation.replace("Login");
+      }
+    } catch (error) {
+      console.error("Logout Error:", error);
+    }
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Bạn đang nghĩ gì thế?"
-          placeholderTextColor="#bbb"
-        />
+        <Text style={styles.logo}>SocialHub</Text>
         <View style={styles.headerRight}>
-          <MaterialIcon
-            name="video-call"
-            size={25}
-            color="#fff"
-            style={styles.icon}
+          <IconButton
+            icon="video-outline"
+            iconColor="#fff"
+            size={24}
+            onPress={() => {}}
           />
-          <MaterialIcon
-            name="notifications"
-            size={25}
-            color="#fff"
-            style={styles.icon}
+          <IconButton
+            icon="bell-outline"
+            iconColor="#fff"
+            size={24}
+            onPress={() => {}}
           />
-          <Button title="Logout" onPress={handleLogout} color="#ff4436" />
+          <Button
+            mode="contained"
+            onPress={handleLogout}
+            buttonColor="#ff4436"
+            labelStyle={{ fontSize: 12 }}
+            style={styles.logoutBtn}
+          >
+            Đăng xuất
+          </Button>
         </View>
       </View>
 
-      {/* Stories Section */}
       <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.storiesSection}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
-        <View style={styles.story}>
-          <Image
-            source={{
-              uri: "https://png.pngtree.com/element_our/20200610/ourlarge/pngtree-default-avatar-image_2237213.jpg",
-            }}
-            style={styles.storyImage}
-          />
-          <View style={styles.addStoryIcon}>
-            <Icon name="plus" size={15} color="#fff" />
-          </View>
-          <Text style={styles.storyText}>Tạo tin</Text>
-        </View>
-        {/* Thêm các story khác tương tự */}
-      </ScrollView>
-
-      {/* Post Section */}
-      <View style={styles.postSection}>
-        <View style={styles.post}>
-          <View style={styles.postHeader}>
-            <Image
-              source={{
-                uri: "https://png.pngtree.com/element_our/20200610/ourlarge/pngtree-default-avatar-image_2237213.jpg",
-              }}
-              style={styles.postProfileImage}
+        {/* Post Input Section */}
+        <Card style={styles.inputCard}>
+          <Card.Content style={styles.inputRow}>
+            <Avatar.Image
+              size={40}
+              source={{ uri: "https://i.pravatar.cc/150?u=me" }}
             />
-            <View>
-              <Text style={styles.postProfileName}>Kỹ Năng Tạch Môn</Text>
-              <Text style={styles.postTime}>50 phút trước</Text>
-            </View>
+            <TextInput
+              placeholder="Bạn đang nghĩ gì thế?"
+              placeholderTextColor="#999"
+              mode="flat"
+              style={styles.searchInput}
+              underlineColor="transparent"
+              activeUnderlineColor="transparent"
+            />
+          </Card.Content>
+          <Divider style={{ backgroundColor: "#3a3b3c" }} />
+          <View style={styles.inputActions}>
+            <Button icon="image" textColor="#45bd62">
+              Ảnh/Video
+            </Button>
+            <Button icon="emoticon-outline" textColor="#f7b928">
+              Cảm xúc
+            </Button>
           </View>
-          <Text style={styles.postText}>
-            100% chỉ copy code chứ không tìm hiểu 😂 #knst
-          </Text>
-          <Image
-            source={{
-              uri: "https://png.pngtree.com/element_our/20200610/ourlarge/pngtree-default-avatar-image_2237213.jpg",
-            }}
+        </Card>
+
+        {/* Stories */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.storyScroll}
+        >
+          <View style={styles.createStory}>
+            <Image
+              source={{ uri: "https://i.pravatar.cc/150?u=me" }}
+              style={styles.storyImg}
+            />
+            <View style={styles.plusIcon}>
+              <IconButton icon="plus" size={15} iconColor="#fff" />
+            </View>
+            <Text style={styles.storyName}>Tạo tin</Text>
+          </View>
+          {[1, 2, 3, 4, 5].map((item) => (
+            <View key={item} style={styles.friendStory}>
+              <Image
+                source={{ uri: `https://i.pravatar.cc/150?u=${item}` }}
+                style={styles.storyImg}
+              />
+              <Avatar.Image
+                size={30}
+                source={{ uri: `https://i.pravatar.cc/150?u=${item + 10}` }}
+                style={styles.storyAvatar}
+              />
+              <Text style={styles.storyName}>User {item}</Text>
+            </View>
+          ))}
+        </ScrollView>
+
+        {/* Feed */}
+        <Card style={styles.postCard}>
+          <View style={styles.postHeader}>
+            <Avatar.Image
+              size={40}
+              source={{ uri: "https://i.pravatar.cc/150?u=8" }}
+            />
+            <View style={styles.postMeta}>
+              <Text style={styles.userName}>Kỹ Năng Tạch Môn</Text>
+              <Text style={styles.postTime}>50 phút trước • 🌎</Text>
+            </View>
+            <IconButton icon="dots-horizontal" iconColor="#b0b3b8" />
+          </View>
+          <Card.Content>
+            <Text style={styles.postText}>
+              100% chỉ copy code chứ không tìm hiểu 😂 #ReactNative #CodingLife
+            </Text>
+          </Card.Content>
+          <Card.Cover
+            source={{ uri: "https://picsum.photos/700" }}
             style={styles.postImage}
           />
-        </View>
-      </View>
-    </ScrollView>
+          <View style={styles.postStats}>
+            <Text style={styles.statsText}>👍 1.2K</Text>
+            <Text style={styles.statsText}>45 bình luận</Text>
+          </View>
+          <Divider style={{ backgroundColor: "#3a3b3c" }} />
+          <Card.Actions style={styles.actions}>
+            <Button icon="thumb-up-outline" textColor="#b0b3b8">
+              Thích
+            </Button>
+            <Button icon="comment-outline" textColor="#b0b3b8">
+              Bình luận
+            </Button>
+            <Button icon="share-outline" textColor="#b0b3b8">
+              Chia sẻ
+            </Button>
+          </Card.Actions>
+        </Card>
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#1c1e21" },
+  container: { flex: 1, backgroundColor: "#18191a" },
   header: {
+    height: 60,
     flexDirection: "row",
     alignItems: "center",
-    padding: 10,
+    justifyContent: "space-between",
+    paddingHorizontal: 15,
     backgroundColor: "#242526",
+    elevation: 4,
+    zIndex: 10,
   },
+  logo: {
+    color: "#1877f2",
+    fontSize: 24,
+    fontWeight: "bold",
+    letterSpacing: -1,
+  },
+  headerRight: { flexDirection: "row", alignItems: "center" },
+  logoutBtn: { marginLeft: 5, borderRadius: 8 },
+
+  scrollContent: {
+    alignItems: "center",
+    paddingVertical: 20,
+  },
+  inputCard: {
+    width: isWeb ? 600 : width * 0.95,
+    backgroundColor: "#242526",
+    borderRadius: 10,
+    marginBottom: 15,
+  },
+  inputRow: { flexDirection: "row", alignItems: "center" },
   searchInput: {
     flex: 1,
     backgroundColor: "#3a3b3c",
-    borderRadius: 20,
-    paddingHorizontal: 15,
-    color: "#fff",
     height: 40,
-  },
-  headerRight: { flexDirection: "row", alignItems: "center", marginLeft: 10 },
-  icon: { marginLeft: 10 },
-  storiesSection: { flexDirection: "row", padding: 10 },
-  story: { position: "relative", marginRight: 10 },
-  storyImage: { width: 100, height: 150, borderRadius: 10 },
-  addStoryIcon: {
-    position: "absolute",
-    bottom: 30,
-    left: 10,
-    backgroundColor: "#1877f2",
     borderRadius: 20,
+    marginLeft: 10,
+    color: "#fff",
+  },
+  inputActions: {
+    flexDirection: "row",
+    justifyContent: "space-around",
     padding: 5,
   },
-  storyText: { color: "#fff", textAlign: "center", marginTop: 5 },
-  post: {
+
+  storyScroll: {
+    width: isWeb ? 600 : width,
+    marginBottom: 20,
+    paddingLeft: 10,
+  },
+  createStory: {
+    width: 110,
+    height: 200,
     backgroundColor: "#242526",
     borderRadius: 10,
-    padding: 15,
-    marginBottom: 15,
-  },
-  postHeader: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
-  postProfileImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
     marginRight: 10,
+    overflow: "hidden",
   },
-  postProfileName: { color: "#fff", fontWeight: "bold" },
-  postTime: { color: "#888", fontSize: 12 },
-  postText: { color: "#fff", marginBottom: 10 },
-  postImage: { width: "100%", height: 300, borderRadius: 10 },
+  storyImg: { width: "100%", height: "80%", opacity: 0.8 },
+  plusIcon: {
+    position: "absolute",
+    top: "70%",
+    alignSelf: "center",
+    backgroundColor: "#1877f2",
+    borderRadius: 20,
+    borderWidth: 3,
+    borderColor: "#242526",
+  },
+  storyName: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginTop: 15,
+  },
+  friendStory: {
+    width: 110,
+    height: 200,
+    marginRight: 10,
+    borderRadius: 10,
+    overflow: "hidden",
+  },
+  storyAvatar: {
+    position: "absolute",
+    top: 10,
+    left: 10,
+    borderWidth: 3,
+    borderColor: "#1877f2",
+  },
+
+  postCard: {
+    width: isWeb ? 600 : width * 0.95,
+    backgroundColor: "#242526",
+    borderRadius: 10,
+    marginBottom: 20,
+  },
+  postHeader: { flexDirection: "row", padding: 12, alignItems: "center" },
+  postMeta: { flex: 1, marginLeft: 10 },
+  userName: { color: "#e4e6eb", fontWeight: "bold", fontSize: 16 },
+  postTime: { color: "#b0b3b8", fontSize: 12 },
+  postText: { color: "#e4e6eb", fontSize: 15, lineHeight: 20 },
+  postImage: { height: 400, marginHorizontal: 0 },
+  postStats: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    padding: 12,
+  },
+  statsText: { color: "#b0b3b8", fontSize: 13 },
+  actions: {
+    justifyContent: "space-around",
+    borderTopWidth: 0.5,
+    borderColor: "#3e4042",
+  },
 });
 
 export default HomeScreen;

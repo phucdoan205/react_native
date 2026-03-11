@@ -4,11 +4,10 @@ import { createStackNavigator } from "@react-navigation/stack";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ActivityIndicator, View } from "react-native";
 
-// Import các màn hình của bạn
+// Import các màn hình
 import LoginScreen from "./LoginScreen";
 import HomeScreen from "./HomeScreen";
 import RegisterScreen from "./RegisterScreen";
-// import RegisterScreen from "./RegisterScreen";
 
 const Stack = createStackNavigator();
 
@@ -20,7 +19,7 @@ const App = () => {
     const checkToken = async () => {
       try {
         const token = await AsyncStorage.getItem("token");
-        setUser(!!token); // true nếu có token, false nếu không
+        setUser(!!token);
       } catch (e) {
         setUser(false);
       } finally {
@@ -32,7 +31,13 @@ const App = () => {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: "center" }}>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          backgroundColor: "#18191a",
+        }}
+      >
         <ActivityIndicator size="large" color="#6200ee" />
       </View>
     );
@@ -40,18 +45,18 @@ const App = () => {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator>
+      {/* Thêm screenOptions={{ headerShown: false }} ở đây 
+          để ẩn cái thanh màu trắng (Navbar) trên toàn bộ các màn hình
+      */}
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
         {user === false ? (
           <>
             <Stack.Screen name="Login">
               {(props) => <LoginScreen {...props} setUser={setUser} />}
             </Stack.Screen>
-            {/* Thêm dòng này để Stack biết trang Register tồn tại */}
             <Stack.Screen name="Register" component={RegisterScreen} />
           </>
         ) : (
-          /* <Stack.Screen name="Register" component={RegisterScreen} /> */
-          // LUỒNG ĐÃ ĐĂNG NHẬP
           <Stack.Screen name="Home">
             {(props) => <HomeScreen {...props} setUser={setUser} />}
           </Stack.Screen>
