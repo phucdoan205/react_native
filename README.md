@@ -25,4 +25,12 @@ npx expo install expo@54
 npx expo install --fix
 
 # mongoDB, framework express cho nodejs
-npm install express mongoose bcryptjs cors body-parser axios @react-navigation/native @react-navigation/stack @react-native-async-storage/async-storage react-native-paper jsonwebtoken react-native-vector-icons
+npm install express mongoose bcryptjs cors body-parser @react-navigation/native @react-navigation/stack @react-native-async-storage/async-storage react-native-paper jsonwebtoken react-native-vector-icons
+
+# khai báo thư viện quản lí trạng thái redux
+npm install redux redux-thunk react-redux @reduxjs/toolkit
+
+npm install @react-navigation/native-stack
+
+# Cài đặt Express, Socket.io và Axios (dành cho Backend & Real-time)
+npm install express socket.io axios socket.io-client
