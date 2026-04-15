@@ -16,7 +16,7 @@ expo init <tên-project>
 Set-ExecutionPolicy RemoteSigned
 
 # các thư viện cần cài đặt cơ bản của react native
-npm install react-native-paper @react-navigation/native @react-navigation/bottom-tabs react-native-gesture-handler react-native-reanimated react-native-screens react-native-safe-area-context @react-native-community/masked-view
+npm install react-native-paper @react-navigation/native @react-navigation/bottom-tabs react-native-gesture-handler react-native-reanimated react-native-screens react-native-safe-area-context @react-native-community/masked-view react-native-vector-icons
 
 # Ép project sử dụng SDK 52
 npx expo install expo@54
