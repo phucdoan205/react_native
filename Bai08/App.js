@@ -1,52 +1,111 @@
 // Nhập các thư viện cần thiết
-import React from "react"; // Nhập React để sử dụng
-import { NavigationContainer } from "@react-navigation/native"; // Nhập NavigationContainer để quản lý điều hướng
-import { createNativeStackNavigator } from "@react-navigation/native-stack"; // Nhập stack navigator cho điều hướng ngăn xếp
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"; // Nhập bottom tab navigator cho điều hướng tab
-import { Provider } from "react-redux"; // Nhập Provider từ react-redux để kết nối store Redux
-import store from "./Store"; // Nhập store từ file Store.js
-import ContactList from "./ContactList"; // Nhập thành phần danh sách liên hệ
-import AddContact from "./AddContact"; // Nhập thành phần thêm liên hệ
-import ChatApp from "./ChatApp"; // Nhập thành phần ứng dụng chat
-import TasksScreen from "./TasksScreen"; // Nhập thành phần màn hình công việc
+import React from "react";
+import { Platform } from "react-native"; // Thêm Platform để kiểm tra môi trường
+import { NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { Provider } from "react-redux";
+import Ionicons from "react-native-vector-icons/Ionicons";
 
-// Tạo một stack navigator
+import store from "./Store";
+import ContactList from "./ContactList";
+import AddContact from "./AddContact";
+import ChatApp from "./ChatApp";
+import TasksScreen from "./TasksScreen";
+
+// --- ĐOẠN CODE FIX ICON CHO WEB ---
+if (Platform.OS === "web") {
+  const iconFontStyles = `
+    @font-face {
+      src: url(${require("react-native-vector-icons/Fonts/Ionicons.ttf")});
+      font-family: Ionicons;
+    }
+  `;
+  const style = document.createElement("style");
+  style.type = "text/css";
+  if (style.styleSheet) {
+    style.styleSheet.cssText = iconFontStyles;
+  } else {
+    style.appendChild(document.createTextNode(iconFontStyles));
+  }
+  document.head.appendChild(style);
+}
+// ---------------------------------
+
 const Stack = createNativeStackNavigator();
-// Tạo một bottom tab navigator
 const Tab = createBottomTabNavigator();
 
-// Định nghĩa stack cho danh bạ
 const ContactStack = () => {
   return (
     <Stack.Navigator>
       <Stack.Screen
-        name="Contacts" // Tên màn hình
-        component={ContactList} // Thành phần hiển thị cho màn hình này
-        options={{ title: "My Contacts" }} // Thiết lập tiêu đề cho màn hình danh bạ
+        name="ContactsList"
+        component={ContactList}
+        options={{ title: "My Contacts" }}
       />
       <Stack.Screen
-        name="AddContact" // Tên màn hình thêm liên hệ
-        component={AddContact} // Thành phần hiển thị cho màn hình này
-        options={{ title: "Add Contact" }} // Thiết lập tiêu đề cho màn hình thêm liên hệ
+        name="AddContact"
+        component={AddContact}
+        options={{ title: "Add Contact" }}
       />
     </Stack.Navigator>
   );
 };
 
-// Định nghĩa thành phần chính của ứng dụng
 const App = () => {
   return (
     <Provider store={store}>
       <NavigationContainer>
-        <Tab.Navigator>
-          <Tab.Screen name="Tasks" component={TasksScreen} />
-          <Tab.Screen name="Contacts" component={ContactStack} />
-          <Tab.Screen name="Chat" component={ChatApp} />
+        <Tab.Navigator
+          screenOptions={({ route }) => ({
+            tabBarIcon: ({ focused, color, size }) => {
+              let iconName;
+              if (route.name === "Tasks") {
+                iconName = focused ? "list-circle" : "list-circle-outline";
+              } else if (route.name === "Contacts") {
+                iconName = focused ? "people" : "people-outline";
+              } else if (route.name === "Chat") {
+                iconName = focused ? "chatbubbles" : "chatbubbles-outline";
+              }
+
+              // Trả về component Icon
+              return <Ionicons name={iconName} size={size} color={color} />;
+            },
+            tabBarActiveTintColor: "#6366f1",
+            tabBarInactiveTintColor: "gray",
+            tabBarStyle: {
+              paddingBottom: 5,
+              height: 60,
+              // Thêm style cho web để hiển thị chuyên nghiệp hơn
+              ...Platform.select({
+                web: {
+                  borderTopWidth: 1,
+                  borderTopColor: "#e2e8f0",
+                },
+              }),
+            },
+            headerShown: false,
+          })}
+        >
+          <Tab.Screen
+            name="Tasks"
+            component={TasksScreen}
+            options={{ title: "Công việc" }}
+          />
+          <Tab.Screen
+            name="Contacts"
+            component={ContactStack}
+            options={{ title: "Danh bạ" }}
+          />
+          <Tab.Screen
+            name="Chat"
+            component={ChatApp}
+            options={{ title: "Tin nhắn" }}
+          />
         </Tab.Navigator>
       </NavigationContainer>
     </Provider>
   );
 };
 
-// Xuất thành phần App để sử dụng trong ứng dụng
 export default App;

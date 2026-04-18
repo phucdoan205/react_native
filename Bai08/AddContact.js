@@ -1,102 +1,223 @@
-// Nhập các thư viện cần thiết
-import React, { useState, useEffect } from "react"; // Nhập React và các hook cần thiết
-import { View, StyleSheet, Alert } from "react-native"; // Nhập thành phần từ React Native
-import { TextInput, Button, Title } from "react-native-paper"; // Nhập các thành phần từ react-native-paper
-import AsyncStorage from "@react-native-async-storage/async-storage"; // Nhập AsyncStorage để lưu trữ dữ liệu
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  StyleSheet,
+  Alert,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// Định nghĩa thành phần AddContact
 const AddContact = ({ navigation, route }) => {
-  const [name, setName] = useState(""); // Trạng thái cho tên
-  const [phoneNumber, setPhoneNumber] = useState(""); // Trạng thái cho số điện thoại
+  const [name, setName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const isEditing = route.params?.index !== undefined;
 
-  // Sử dụng useEffect để khôi phục thông tin liên hệ nếu có
   useEffect(() => {
     if (route.params?.contact) {
       const { contact } = route.params;
-      setName(contact.name); // Đặt tên từ params
-      setPhoneNumber(contact.phoneNumber); // Đặt số điện thoại từ params
+      setName(contact.name || "");
+      setPhoneNumber(contact.phoneNumber || "");
     }
   }, [route.params?.contact]);
 
-  // Hàm để lưu liên hệ
   const saveContact = async () => {
-    // Kiểm tra xem tên và số điện thoại có được nhập hay không
-    if (!name || !phoneNumber) {
-      Alert.alert("Error", "Please enter both name and phone number."); // Hiển thị thông báo lỗi
-      return; // Kết thúc hàm nếu có lỗi
+    if (!name.trim() || !phoneNumber.trim()) {
+      Alert.alert("Thông báo", "Vui lòng nhập đầy đủ tên và số điện thoại.");
+      return;
     }
 
-    const newContact = { name, phoneNumber }; // Tạo đối tượng liên hệ mới
-    const storedContacts = await AsyncStorage.getItem("contacts"); // Lấy danh sách liên hệ từ AsyncStorage
-    const contacts = storedContacts ? JSON.parse(storedContacts) : []; // Phân tích dữ liệu nếu có, hoặc khởi tạo mảng rỗng
+    const newContact = {
+      name: name.trim(),
+      phoneNumber: phoneNumber.trim(),
+    };
 
-    // Nếu có chỉ số liên hệ, cập nhật liên hệ đó; nếu không, thêm liên hệ mới
-    if (route.params?.index !== undefined) {
-      contacts[route.params.index] = newContact; // Cập nhật liên hệ đã tồn tại
-    } else {
-      contacts.push(newContact); // Thêm liên hệ mới
+    try {
+      const storedContacts = await AsyncStorage.getItem("contacts");
+      const contacts = storedContacts ? JSON.parse(storedContacts) : [];
+
+      if (isEditing) {
+        contacts[route.params.index] = newContact;
+      } else {
+        contacts.push(newContact);
+      }
+
+      await AsyncStorage.setItem("contacts", JSON.stringify(contacts));
+      navigation.goBack(); // Dùng goBack để quay lại màn hình trước đó mượt hơn
+    } catch (error) {
+      Alert.alert("Lỗi", "Không thể lưu liên hệ.");
     }
-
-    await AsyncStorage.setItem("contacts", JSON.stringify(contacts)); // Lưu danh sách liên hệ đã cập nhật vào AsyncStorage
-    navigation.navigate("Contacts"); // Điều hướng về màn hình danh bạ
   };
 
-  // Giao diện của thành phần
   return (
-    <View style={styles.container}>
-      <Title style={styles.title}>Add New Contact</Title> {/* Tiêu đề */}
-      <TextInput
-        label="Enter Name" // Nhãn cho trường nhập tên
-        value={name} // Giá trị của trường nhập tên
-        onChangeText={setName} // Cập nhật trạng thái khi người dùng nhập
-        style={styles.input} // Kiểu dáng cho trường nhập
-        mode="outlined" // Chế độ hiển thị
-        theme={{ colors: { primary: "#6200ee" } }} // Màu sắc cho đường viền
-      />
-      <TextInput
-        label="Enter Phone Number" // Nhãn cho trường nhập số điện thoại
-        value={phoneNumber} // Giá trị của trường nhập số điện thoại
-        onChangeText={setPhoneNumber} // Cập nhật trạng thái khi người dùng nhập
-        keyboardType="phone-pad" // Loại bàn phím cho số điện thoại
-        style={styles.input} // Kiểu dáng cho trường nhập
-        mode="outlined" // Chế độ hiển thị
-        theme={{ colors: { primary: "#6200ee" } }} // Màu sắc cho đường viền
-      />
-      <Button
-        mode="contained" // Chế độ hiển thị cho nút
-        onPress={saveContact} // Gọi hàm lưu liên hệ khi nhấn nút
-        style={styles.button} // Kiểu dáng cho nút
-        labelStyle={styles.buttonLabel} // Kiểu dáng cho chữ trên nút
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
       >
-        Save Contact {/* Văn bản trên nút */}
-      </Button>
-    </View>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={styles.header}>
+            <View style={styles.avatarPlaceholder}>
+              <Text style={styles.avatarIcon}>👤</Text>
+            </View>
+            <Text style={styles.title}>
+              {isEditing ? "Chỉnh sửa liên hệ" : "Thêm liên hệ mới"}
+            </Text>
+            <Text style={styles.subtitle}>
+              Lưu thông tin liên lạc của bạn an toàn và nhanh chóng
+            </Text>
+          </View>
+
+          <View style={styles.form}>
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Họ và tên</Text>
+              <TextInput
+                placeholder="Ví dụ: Nguyễn Văn A"
+                value={name}
+                onChangeText={setName}
+                style={styles.input}
+                placeholderTextColor="#94a3b8"
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Số điện thoại</Text>
+              <TextInput
+                placeholder="Ví dụ: 090 123 4567"
+                value={phoneNumber}
+                onChangeText={setPhoneNumber}
+                keyboardType="phone-pad"
+                style={styles.input}
+                placeholderTextColor="#94a3b8"
+              />
+            </View>
+
+            <TouchableOpacity
+              style={styles.button}
+              onPress={saveContact}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.buttonText}>
+                {isEditing ? "Cập nhật liên hệ" : "Lưu liên hệ"}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => navigation.goBack()}
+            >
+              <Text style={styles.cancelButtonText}>Hủy bỏ</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
-// Định nghĩa các kiểu dáng cho thành phần
 const styles = StyleSheet.create({
   container: {
-    flex: 1, // Chiếm toàn bộ không gian
-    padding: 20, // Padding cho container
-    backgroundColor: "#f9f9f9", // Màu nền cho container
-    justifyContent: "center", // Căn giữa nội dung
+    flex: 1,
+    backgroundColor: "#F8FAFC", // Màu nền xám nhạt hiện đại
+  },
+  scrollContent: {
+    padding: 24,
+    justifyContent: "center",
+  },
+  header: {
+    alignItems: "center",
+    marginBottom: 40,
+    marginTop: 20,
+  },
+  avatarPlaceholder: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: "#EEF2FF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
+    borderWidth: 2,
+    borderColor: "#6366f1",
+    borderStyle: "dashed",
+  },
+  avatarIcon: {
+    fontSize: 40,
   },
   title: {
-    fontSize: 24, // Kích thước chữ cho tiêu đề
-    marginBottom: 20, // Khoảng cách dưới tiêu đề
-    textAlign: "center", // Căn giữa chữ
+    fontSize: 28,
+    fontWeight: "900",
+    color: "#1E293B",
+    textAlign: "center",
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: "#64748B",
+    textAlign: "center",
+    marginTop: 8,
+    paddingHorizontal: 20,
+  },
+  form: {
+    width: "100%",
+  },
+  inputContainer: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#475569",
+    marginBottom: 8,
+    marginLeft: 4,
   },
   input: {
-    marginBottom: 15, // Khoảng cách dưới trường nhập
-    backgroundColor: "white", // Màu nền cho trường nhập
+    backgroundColor: "#ffffff",
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: "#E2E8F0",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: "#0F172A",
+    // Shadow nhẹ cho input
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
   button: {
-    marginTop: 20, // Khoảng cách trên nút
-    backgroundColor: "#6200ee", // Màu nền cho nút
+    marginTop: 10,
+    backgroundColor: "#6366f1", // Tím Indigo đồng bộ
+    borderRadius: 16,
+    alignItems: "center",
+    paddingVertical: 16,
+    shadowColor: "#6366f1",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
   },
-  buttonLabel: {
-    color: "white", // Màu chữ cho nút
+  buttonText: {
+    color: "#ffffff",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  cancelButton: {
+    marginTop: 15,
+    alignItems: "center",
+    paddingVertical: 12,
+  },
+  cancelButtonText: {
+    color: "#94A3B8",
+    fontSize: 15,
+    fontWeight: "600",
   },
 });
 

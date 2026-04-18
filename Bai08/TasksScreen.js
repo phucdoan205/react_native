@@ -1,117 +1,193 @@
-// Nhập các thư viện cần thiết
-import React, { useEffect } from "react"; // Nhập React và hook useEffect
+import React, { useEffect } from "react";
 import {
   View,
   Text,
   FlatList,
   StyleSheet,
   ActivityIndicator,
-} from "react-native"; // Nhập các thành phần từ React Native
-import { useDispatch, useSelector } from "react-redux"; // Nhập các hook từ react-redux
-import { fetchTasks } from "./TasksSlice"; // Nhập action fetchTasks từ TasksSlice
+  StatusBar,
+  SafeAreaView,
+} from "react-native";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchTasks } from "./TasksSlice";
 
-// Định nghĩa thành phần TasksScreen
 const TasksScreen = () => {
-  const dispatch = useDispatch(); // Khởi tạo dispatch để gửi actions
-  // Lấy tasks, loading và error từ Redux store
+  const dispatch = useDispatch();
   const { tasks, loading, error } = useSelector((state) => state.tasks);
 
-  // Sử dụng useEffect để gọi fetchTasks khi component được mount
   useEffect(() => {
     dispatch(fetchTasks());
   }, [dispatch]);
 
-  // Nếu đang tải dữ liệu, hiển thị ActivityIndicator
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#4caf50" />{" "}
-        {/* Vòng chỉ thị tải */}
-        <Text style={styles.loadingText}>Loading tasks...</Text>{" "}
-        {/* Văn bản thông báo */}
+        <ActivityIndicator size="large" color="#6366f1" />
+        <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
       </View>
     );
   }
 
-  // Nếu có lỗi, hiển thị thông báo lỗi
   if (error) {
     return (
       <View style={styles.center}>
-        <Text style={styles.errorText}>Error: {error}</Text> {/* Văn bản lỗi */}
+        <View style={styles.errorCard}>
+          <Text style={styles.errorText}>⚠️ Có lỗi xảy ra: {error}</Text>
+        </View>
       </View>
     );
   }
 
-  // Nếu không có lỗi và không đang tải, hiển thị danh sách công việc
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Task List</Text>{" "}
-      {/* Tiêu đề danh sách công việc */}
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" />
+      <View style={styles.headerContainer}>
+        <Text style={styles.headerSubtitle}>Chào buổi sáng,</Text>
+        <Text style={styles.headerTitle}>Danh sách công việc</Text>
+      </View>
+
       <FlatList
-        data={tasks} // Dữ liệu để hiển thị
-        keyExtractor={(item) => item.id.toString()} // Chìa khóa cho mỗi item
+        data={tasks}
+        keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text style={styles.taskTitle}>
-              {item.completed ? "✅ " : "⏳ "} {item.title}{" "}
-              {/* Hiển thị biểu tượng và tiêu đề công việc */}
-            </Text>
+          <View
+            style={[
+              styles.card,
+              item.completed ? styles.cardCompleted : styles.cardPending,
+            ]}
+          >
+            <View style={styles.iconWrapper}>
+              <Text style={styles.statusIcon}>
+                {item.completed ? "✓" : "⚡"}
+              </Text>
+            </View>
+            <View style={styles.taskContent}>
+              <Text
+                style={[
+                  styles.taskTitle,
+                  item.completed && styles.taskTitleCompleted,
+                ]}
+              >
+                {item.title}
+              </Text>
+              <Text style={styles.statusText}>
+                {item.completed ? "Đã hoàn thành" : "Đang thực hiện"}
+              </Text>
+            </View>
           </View>
         )}
-        contentContainerStyle={styles.listContainer} // Căn chỉnh nội dung của danh sách
+        contentContainerStyle={styles.listContainer}
+        showsVerticalScrollIndicator={false}
       />
-    </View>
+    </SafeAreaView>
   );
 };
 
-// Định nghĩa các kiểu dáng cho thành phần
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5", // Màu nền cho container
-    padding: 16, // Padding cho container
+    backgroundColor: "#F8FAFC", // Màu nền xám nhạt hiện đại
   },
   center: {
     flex: 1,
-    justifyContent: "center", // Căn giữa nội dung
-    alignItems: "center", // Căn giữa nội dung theo chiều ngang
-    backgroundColor: "#f5f5f5", // Màu nền cho view trung tâm
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#F8FAFC",
   },
-  header: {
-    fontSize: 24, // Kích thước chữ cho tiêu đề
-    fontWeight: "bold", // Đậm chữ
-    marginBottom: 16, // Khoảng cách dưới tiêu đề
-    textAlign: "center", // Căn giữa chữ
-    color: "#4caf50", // Màu chữ
+  headerContainer: {
+    paddingHorizontal: 24,
+    paddingTop: 40,
+    paddingBottom: 20,
   },
-  loadingText: {
-    marginTop: 8, // Khoảng cách trên văn bản thông báo
-    fontSize: 16, // Kích thước chữ cho văn bản thông báo
-    color: "#757575", // Màu chữ cho văn bản thông báo
+  headerSubtitle: {
+    fontSize: 16,
+    color: "#64748B",
+    fontWeight: "500",
   },
-  errorText: {
-    fontSize: 18, // Kích thước chữ cho thông báo lỗi
-    color: "red", // Màu chữ cho thông báo lỗi
+  headerTitle: {
+    fontSize: 32,
+    fontWeight: "800",
+    color: "#1E293B",
+    letterSpacing: -0.5,
   },
   listContainer: {
-    paddingBottom: 16, // Padding dưới danh sách
+    paddingHorizontal: 20,
+    paddingBottom: 30,
   },
   card: {
-    backgroundColor: "#ffffff", // Màu nền cho thẻ công việc
-    borderRadius: 8, // Bo tròn góc
-    padding: 16, // Padding cho thẻ
-    marginVertical: 8, // Khoảng cách dọc giữa các thẻ
-    shadowColor: "#000", // Màu bóng
-    shadowOffset: { width: 0, height: 2 }, // Độ lệch bóng
-    shadowOpacity: 0.1, // Độ mờ của bóng
-    shadowRadius: 4, // Bán kính bóng
-    elevation: 2, // Độ cao của bóng trên Android
+    flexDirection: "row",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 18,
+    marginVertical: 10,
+    alignItems: "center",
+    // Shadow cho iOS
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    // Shadow cho Android
+    elevation: 4,
+  },
+  cardPending: {
+    borderLeftWidth: 6,
+    borderLeftColor: "#6366f1", // Màu tím Indigo
+  },
+  cardCompleted: {
+    borderLeftWidth: 6,
+    borderLeftColor: "#10B981", // Màu xanh Emerald
+    opacity: 0.8,
+  },
+  iconWrapper: {
+    width: 45,
+    height: 45,
+    borderRadius: 12,
+    backgroundColor: "#F1F5F9",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 15,
+  },
+  statusIcon: {
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+  taskContent: {
+    flex: 1,
   },
   taskTitle: {
-    fontSize: 16, // Kích thước chữ cho tiêu đề công việc
-    color: "#333", // Màu chữ cho tiêu đề công việc
+    fontSize: 17,
+    fontWeight: "600",
+    color: "#334155",
+    lineHeight: 22,
+  },
+  taskTitleCompleted: {
+    textDecorationLine: "line-through",
+    color: "#94A3B8",
+  },
+  statusText: {
+    fontSize: 12,
+    color: "#94A3B8",
+    marginTop: 4,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  loadingText: {
+    marginTop: 15,
+    fontSize: 15,
+    color: "#6366f1",
+    fontWeight: "600",
+  },
+  errorCard: {
+    backgroundColor: "#FEF2F2",
+    padding: 20,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: "#FECACA",
+  },
+  errorText: {
+    color: "#DC2626",
+    fontWeight: "500",
   },
 });
 
-// Xuất thành phần TasksScreen để sử dụng trong ứng dụng
 export default TasksScreen;
