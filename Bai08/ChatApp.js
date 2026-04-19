@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  StatusBar,
 } from "react-native";
 import axios from "axios";
 import io from "socket.io-client";
@@ -28,7 +29,7 @@ const createMessage = (text, sender) => ({
 const ChatApp = () => {
   const [messages, setMessages] = useState([
     createMessage(
-      "Xin chao! Hay chay node ServerIO.js truoc, sau do ban co the chat voi AI.",
+      "Chào bạn! Mình là trợ lý AI thông minh. Hôm nay bạn thế nào? ✨",
       "ai",
     ),
   ]);
@@ -37,14 +38,8 @@ const ChatApp = () => {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    const handleConnect = () => {
-      setIsConnected(true);
-    };
-
-    const handleDisconnect = () => {
-      setIsConnected(false);
-    };
-
+    const handleConnect = () => setIsConnected(true);
+    const handleDisconnect = () => setIsConnected(false);
     const handleMessage = (message) => {
       setMessages((prevMessages) => [...prevMessages, message]);
     };
@@ -64,16 +59,13 @@ const ChatApp = () => {
 
   const sendMessage = async () => {
     const trimmedInput = input.trim();
-
-    if (!trimmedInput || isSending) {
-      return;
-    }
+    if (!trimmedInput || isSending) return;
 
     if (!socket.connected) {
       setMessages((prevMessages) => [
         ...prevMessages,
         createMessage(
-          "Chua ket noi duoc server socket. Hay chay node ServerIO.js truoc.",
+          "Ối, hình như máy chủ đang nghỉ ngơi chút. Hãy thử lại nhé! 💤",
           "ai",
         ),
       ]);
@@ -86,23 +78,15 @@ const ChatApp = () => {
     setIsSending(true);
 
     try {
-      await axios.post(
-        `${SERVER_URL}/chat`,
-        { message: trimmedInput },
-        {
-          headers: { "Content-Type": "application/json" },
-        },
-      );
+      await axios.post(`${SERVER_URL}/chat`, { message: trimmedInput });
     } catch (error) {
-      const errorMessage =
-        error.response?.data?.error ||
-        "Khong the gui tin nhan toi server AI. Kiem tra ServerIO.js.";
-
       setMessages((prevMessages) => [
         ...prevMessages,
-        createMessage(errorMessage, "ai"),
+        createMessage(
+          "Có chút gián đoạn nhỏ, nhưng đừng bỏ cuộc nhé! ✨",
+          "ai",
+        ),
       ]);
-      console.error("Loi gui chat len server:", error.response?.data || error.message);
     } finally {
       setIsSending(false);
     }
@@ -113,58 +97,86 @@ const ChatApp = () => {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
     >
-      <View style={styles.statusContainer}>
-        <View
-          style={[
-            styles.statusDot,
-            isConnected ? styles.statusOnline : styles.statusOffline,
-          ]}
-        />
-        <Text style={styles.statusText}>
-          {isConnected ? "Da ket noi socket server" : "Dang mat ket noi server"}
-        </Text>
+      <StatusBar barStyle="dark-content" />
+
+      {/* Background Decor */}
+      <View style={styles.circleDecor} />
+
+      {/* Header Status */}
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.headerTitle}>AI Companion 🚀</Text>
+          <View style={styles.statusRow}>
+            <View
+              style={[
+                styles.statusDot,
+                isConnected ? styles.online : styles.offline,
+              ]}
+            />
+            <Text style={styles.statusText}>
+              {isConnected ? "Sẵn sàng hỗ trợ bạn" : "Đang tìm tín hiệu..."}
+            </Text>
+          </View>
+        </View>
       </View>
 
       <FlatList
         data={messages}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
           <View
             style={[
-              styles.messageBox,
-              item.sender === "user" ? styles.userMsg : styles.aiMsg,
+              styles.messageWrapper,
+              item.sender === "user" ? styles.userWrapper : styles.aiWrapper,
             ]}
           >
-            <Text style={styles.messageText}>{item.text}</Text>
+            <View
+              style={[
+                styles.messageBox,
+                item.sender === "user" ? styles.userMsg : styles.aiMsg,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.messageText,
+                  item.sender === "user" ? styles.userText : styles.aiText,
+                ]}
+              >
+                {item.text}
+              </Text>
+            </View>
           </View>
         )}
       />
 
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          value={input}
-          onChangeText={setInput}
-          placeholder="Type a message..."
-          editable={!isSending}
-          onSubmitEditing={sendMessage}
-          returnKeyType="send"
-        />
-        <TouchableOpacity
-          style={[
-            styles.sendButton,
-            (isSending || !isConnected) && styles.sendButtonDisabled,
-          ]}
-          onPress={sendMessage}
-          disabled={isSending || !isConnected}
-        >
-          {isSending ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.sendButtonText}>Send</Text>
-          )}
-        </TouchableOpacity>
+      <View style={styles.bottomContainer}>
+        <View style={styles.inputCard}>
+          <TextInput
+            style={styles.input}
+            value={input}
+            onChangeText={setInput}
+            placeholder="Viết điều gì đó thật tuyệt..."
+            placeholderTextColor="#94A3B8"
+            editable={!isSending}
+            multiline
+          />
+          <TouchableOpacity
+            style={[
+              styles.sendButton,
+              (!input.trim() || isSending) && styles.sendButtonDisabled,
+            ]}
+            onPress={sendMessage}
+            disabled={!input.trim() || isSending}
+          >
+            {isSending ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.sendIcon}>🚀</Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
     </KeyboardAvoidingView>
   );
@@ -173,80 +185,135 @@ const ChatApp = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f0f4f8",
-    padding: 10,
+    backgroundColor: "#F8FAFF",
   },
-  statusContainer: {
+  circleDecor: {
+    position: "absolute",
+    top: -50,
+    right: -50,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: "#E0E7FF",
+    opacity: 0.5,
+  },
+  header: {
+    paddingTop: 50,
+    paddingHorizontal: 24,
+    paddingBottom: 15,
+    backgroundColor: "rgba(255,255,255,0.8)",
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: "900",
+    color: "#1E1B4B",
+    letterSpacing: -0.5,
+  },
+  statusRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 8,
-    paddingHorizontal: 4,
+    marginTop: 4,
   },
   statusDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginRight: 8,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
   },
-  statusOnline: {
-    backgroundColor: "#22c55e",
-  },
-  statusOffline: {
-    backgroundColor: "#ef4444",
-  },
+  online: { backgroundColor: "#10B981" },
+  offline: { backgroundColor: "#F43F5E" },
   statusText: {
-    color: "#475569",
+    color: "#64748B",
     fontSize: 13,
+    fontWeight: "500",
   },
   listContent: {
-    paddingVertical: 8,
+    paddingHorizontal: 16,
+    paddingBottom: 20,
   },
+  messageWrapper: {
+    marginVertical: 6,
+    flexDirection: "row",
+  },
+  userWrapper: { justifyContent: "flex-end" },
+  aiWrapper: { justifyContent: "flex-start" },
   messageBox: {
-    padding: 10,
-    borderRadius: 12,
-    marginVertical: 5,
-    maxWidth: "80%",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 22,
+    maxWidth: "85%",
+    // Shadow hiệu ứng
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
   userMsg: {
-    alignSelf: "flex-end",
-    backgroundColor: "#007bff",
+    backgroundColor: "#6366F1",
+    borderBottomRightRadius: 4,
+    shadowColor: "#6366F1",
   },
   aiMsg: {
-    alignSelf: "flex-start",
-    backgroundColor: "#28a745",
+    backgroundColor: "#FFFFFF",
+    borderBottomLeftRadius: 4,
+    shadowColor: "#000",
   },
   messageText: {
-    color: "#fff",
-    lineHeight: 20,
+    fontSize: 16,
+    lineHeight: 22,
+    fontWeight: "500",
   },
-  inputContainer: {
+  userText: { color: "#FFFFFF" },
+  aiText: { color: "#334155" },
+  bottomContainer: {
+    padding: 16,
+    paddingBottom: Platform.OS === "ios" ? 30 : 16,
+    backgroundColor: "#F8FAFF",
+  },
+  inputCard: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 10,
-    gap: 10,
+    backgroundColor: "#FFF",
+    borderRadius: 30,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    // Glow effect cho input
+    shadowColor: "#6366F1",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.05,
+    shadowRadius: 15,
+    elevation: 5,
   },
   input: {
     flex: 1,
-    backgroundColor: "#fff",
-    borderRadius: 20,
-    paddingHorizontal: 15,
-    height: 44,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    fontSize: 16,
+    maxHeight: 100,
+    color: "#1E293B",
   },
   sendButton: {
-    backgroundColor: "#007bff",
-    paddingHorizontal: 20,
+    backgroundColor: "#6366F1",
+    width: 44,
     height: 44,
-    borderRadius: 20,
+    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
-    minWidth: 74,
+    shadowColor: "#6366F1",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
   },
   sendButtonDisabled: {
-    opacity: 0.6,
+    backgroundColor: "#CBD5E1",
+    shadowOpacity: 0,
   },
-  sendButtonText: {
+  sendIcon: {
+    fontSize: 18,
     color: "#fff",
-    fontWeight: "bold",
   },
 });
 

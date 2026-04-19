@@ -9,8 +9,11 @@ import {
   TouchableOpacity,
   Platform,
   StatusBar,
+  Dimensions,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const { width } = Dimensions.get("window");
 
 const ContactList = ({ navigation }) => {
   const [contacts, setContacts] = useState([]);
@@ -73,7 +76,7 @@ const ContactList = ({ navigation }) => {
   const renderItem = ({ item, index }) => (
     <View style={styles.cardWrapper}>
       <TouchableOpacity
-        activeOpacity={0.7}
+        activeOpacity={0.8}
         style={styles.contactCard}
         onPress={() => editContact(index)}
       >
@@ -81,10 +84,20 @@ const ContactList = ({ navigation }) => {
           <View
             style={[
               styles.avatar,
-              { backgroundColor: index % 2 === 0 ? "#6366f1" : "#ec4899" },
+              {
+                // Sử dụng màu gradient nhẹ nhàng
+                backgroundColor: index % 2 === 0 ? "#FFDEE9" : "#D5EEFF",
+                borderColor: index % 2 === 0 ? "#FF9A8B" : "#A1C4FD",
+                borderWidth: 2,
+              },
             ]}
           >
-            <Text style={styles.avatarText}>
+            <Text
+              style={[
+                styles.avatarText,
+                { color: index % 2 === 0 ? "#FB7185" : "#3B82F6" },
+              ]}
+            >
               {(item.name || "?").trim().charAt(0).toUpperCase()}
             </Text>
           </View>
@@ -93,22 +106,24 @@ const ContactList = ({ navigation }) => {
             <Text style={styles.contactName} numberOfLines={1}>
               {item.name}
             </Text>
-            <Text style={styles.contactNumber}>{item.phoneNumber}</Text>
+            <View style={styles.phoneBadge}>
+              <Text style={styles.contactNumber}>📞 {item.phoneNumber}</Text>
+            </View>
           </View>
         </View>
 
         <View style={styles.cardActions}>
           <TouchableOpacity
-            style={styles.iconCircleEdit}
+            style={styles.actionButton}
             onPress={() => editContact(index)}
           >
-            <Text style={styles.miniIcon}>✎</Text>
+            <Text style={styles.actionIcon}>✨</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.iconCircleDelete}
+            style={[styles.actionButton, { backgroundColor: "#FFE4E6" }]}
             onPress={() => deleteContact(index)}
           >
-            <Text style={styles.miniIcon}>✕</Text>
+            <Text style={styles.actionIcon}>🗑️</Text>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -118,14 +133,20 @@ const ContactList = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
+
+      {/* Các hình khối decor tạo độ lung linh */}
+      <View style={styles.decorCircle1} />
+      <View style={styles.decorCircle2} />
+
       <View style={styles.header}>
         <View>
-          <Text style={styles.headerTitle}>Danh bạ</Text>
-          <Text style={styles.headerSubtitle}>
-            {contacts.length} người liên hệ
-          </Text>
+          <Text style={styles.headerSubtitle}>Chào ngày mới!</Text>
+          <Text style={styles.headerTitle}>Kết nối ✨</Text>
         </View>
-        <View style={styles.headerAccent} />
+        <View style={styles.statBox}>
+          <Text style={styles.statNumber}>{contacts.length}</Text>
+          <Text style={styles.statLabel}>Bạn bè</Text>
+        </View>
       </View>
 
       <FlatList
@@ -136,10 +157,10 @@ const ContactList = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>📭</Text>
-            <Text style={styles.emptyTitle}>Trống trải quá...</Text>
+            <Text style={styles.emptyIcon}>🌈</Text>
+            <Text style={styles.emptyTitle}>Sẵn sàng kết nối?</Text>
             <Text style={styles.emptyText}>
-              Hãy bắt đầu kết nối bằng cách thêm liên hệ mới!
+              Danh bạ của bạn đang chờ những gương mặt mới rạng rỡ!
             </Text>
           </View>
         }
@@ -150,8 +171,10 @@ const ContactList = ({ navigation }) => {
         style={styles.fab}
         onPress={() => navigation.navigate("AddContact")}
       >
-        <Text style={styles.fabIcon}>+</Text>
-        <Text style={styles.fabText}>Thêm mới</Text>
+        <View style={styles.fabContent}>
+          <Text style={styles.fabIcon}>🚀</Text>
+          <Text style={styles.fabText}>THÊM BẠN MỚI</Text>
+        </View>
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -160,34 +183,72 @@ const ContactList = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F1F5F9",
+    backgroundColor: "#FDFCFE", // Trắng hơi ánh tím nhẹ
+  },
+  // Decor Elements
+  decorCircle1: {
+    position: "absolute",
+    top: -40,
+    right: -20,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: "#FFEDD5",
+    opacity: 0.6,
+  },
+  decorCircle2: {
+    position: "absolute",
+    bottom: 100,
+    left: -30,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: "#E0E7FF",
+    opacity: 0.6,
   },
   header: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 28,
     paddingTop: 30,
-    paddingBottom: 15,
+    paddingBottom: 20,
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-  },
-  headerTitle: {
-    fontSize: 34,
-    fontWeight: "900",
-    color: "#0F172A",
-    letterSpacing: -1,
+    alignItems: "flex-end",
   },
   headerSubtitle: {
-    color: "#64748B",
+    color: "#818CF8",
     fontSize: 16,
-    fontWeight: "500",
+    fontWeight: "600",
+    letterSpacing: 1,
+    textTransform: "uppercase",
   },
-  headerAccent: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "#E2E8F0",
-    borderWidth: 4,
-    borderColor: "#FFF",
+  headerTitle: {
+    fontSize: 38,
+    fontWeight: "900",
+    color: "#1E1B4B",
+    marginTop: 4,
+  },
+  statBox: {
+    backgroundColor: "#FFF",
+    padding: 10,
+    borderRadius: 18,
+    alignItems: "center",
+    minWidth: 70,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: "#F1F5F9",
+  },
+  statNumber: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#6366F1",
+  },
+  statLabel: {
+    fontSize: 10,
+    color: "#94A3B8",
+    fontWeight: "700",
   },
   listContent: {
     paddingHorizontal: 20,
@@ -195,21 +256,22 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   cardWrapper: {
-    // Tạo bóng mờ diện rộng cho Card
-    shadowColor: "#6366f1",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 15,
-    elevation: 5,
+    shadowColor: "#818CF8",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
   },
   contactCard: {
-    marginBottom: 16,
-    borderRadius: 24,
-    backgroundColor: "#ffffff",
-    padding: 12,
+    marginBottom: 18,
+    borderRadius: 30, // Bo tròn cực đại
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    padding: 16,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.8)",
   },
   leftSection: {
     flexDirection: "row",
@@ -217,107 +279,103 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 18,
+    width: 62,
+    height: 62,
+    borderRadius: 22, // Bo vuông tròn hiện đại
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 15,
-    // Hiệu ứng Glass cho avatar
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
+    marginRight: 16,
   },
   avatarText: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: "#ffffff",
+    fontSize: 26,
+    fontWeight: "900",
   },
   contactInfo: {
     flex: 1,
   },
   contactName: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#1E293B",
-    marginBottom: 2,
+    fontSize: 19,
+    fontWeight: "800",
+    color: "#334155",
+    marginBottom: 4,
+  },
+  phoneBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: "#F8FAFC",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
   },
   contactNumber: {
-    fontSize: 14,
-    color: "#94A3B8",
-    fontWeight: "500",
+    fontSize: 13,
+    color: "#64748B",
+    fontWeight: "600",
   },
   cardActions: {
     flexDirection: "row",
-    gap: 8,
+    gap: 10,
   },
-  iconCircleEdit: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: "#EEF2FF",
+  actionButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 15,
+    backgroundColor: "#F0F9FF",
     alignItems: "center",
     justifyContent: "center",
   },
-  iconCircleDelete: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: "#FFF1F2",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  miniIcon: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#475569",
+  actionIcon: {
+    fontSize: 18,
   },
   emptyState: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 100,
+    marginTop: 80,
   },
-  emptyIcon: { fontSize: 80, marginBottom: 20 },
+  emptyIcon: { fontSize: 90, marginBottom: 20 },
   emptyTitle: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: "#334155",
+    fontSize: 24,
+    fontWeight: "900",
+    color: "#475569",
+    textAlign: "center",
   },
   emptyText: {
-    marginTop: 10,
-    fontSize: 15,
+    marginTop: 12,
+    fontSize: 16,
     color: "#94A3B8",
     textAlign: "center",
     paddingHorizontal: 40,
+    lineHeight: 22,
   },
   fab: {
     position: "absolute",
-    right: 24,
+    alignSelf: "center",
     bottom: 30,
-    backgroundColor: "#0F172A", // Màu đen Midnight hiện đại
-    borderRadius: 30,
-    paddingHorizontal: 25,
-    paddingVertical: 16,
+    borderRadius: 35,
+    overflow: "hidden",
+    shadowColor: "#6366F1",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.4,
+    shadowRadius: 15,
+    elevation: 10,
+  },
+  fabContent: {
+    backgroundColor: "#6366F1",
+    paddingHorizontal: 30,
+    paddingVertical: 18,
     flexDirection: "row",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 8,
+    justifyContent: "center",
   },
   fabIcon: {
-    color: "#FFF",
-    fontSize: 24,
-    marginRight: 8,
-    fontWeight: "300",
+    fontSize: 22,
+    marginRight: 10,
   },
   fabText: {
     color: "#ffffff",
-    fontWeight: "700",
-    fontSize: 16,
+    fontWeight: "900",
+    fontSize: 15,
+    letterSpacing: 1,
   },
 });
 

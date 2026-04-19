@@ -41,12 +41,12 @@ const ContactStack = () => {
       <Stack.Screen
         name="ContactsList"
         component={ContactList}
-        options={{ title: "My Contacts" }}
+        options={{ title: "Liên hệ" }}
       />
       <Stack.Screen
         name="AddContact"
         component={AddContact}
-        options={{ title: "Add Contact" }}
+        options={{ title: "Thêm liên hệ" }}
       />
     </Stack.Navigator>
   );

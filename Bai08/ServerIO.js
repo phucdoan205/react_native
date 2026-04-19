@@ -8,7 +8,7 @@ const app = express();
 const server = http.createServer(app);
 
 const allowedOrigins = ["http://localhost:8081", "http://localhost:19006"];
-const GEMINI_API_KEY = "AIzaSyC3DYVrY1kQoFVT0ryzsYrNJj1tSYjZRWo";
+const GEMINI_API_KEY = "AIzaSyBHbCG7oIxlsxkrpxfbm7OVIdBdoaTfOFQ";
 const GEMINI_API_URL =
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
@@ -85,5 +85,4 @@ app.post("/chat", async (req, res) => {
 
 server.listen(3000, () => {
   console.log("Server is running on http://localhost:3000");
-  console.log("Hay chay lenh: node ServerIO.js");
 });
