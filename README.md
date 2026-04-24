@@ -30,7 +30,13 @@ npm install express mongoose bcryptjs cors body-parser dotenv @react-navigation/
 # khai báo thư viện quản lí trạng thái redux
 npm install redux redux-thunk react-redux @reduxjs/toolkit
 
-npm install @react-navigation/native-stack
+npm install @react-navigation/native-stack`
 
 # Cài đặt Express, Socket.io và Axios (dành cho Backend & Real-time)
 npm install express socket.io axios socket.io-client
+
+# khai báo thư viện quản lí kết nối mạng, nhận thông báo trên di động
+npm install @react-native-community/netinfo expo-notifications axios
+
+# khai báo thư viện bài 10
+npm install react-native-calendars react-native-vector-icons react-native-popup-menu @react-navigation/native @react-navigation/bottom-tabs react-native-gesture-handler react-native-reanimated@3.16.7 react-native-screens
