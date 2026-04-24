@@ -40,3 +40,6 @@ npm install @react-native-community/netinfo expo-notifications axios
 
 # khai báo thư viện bài 10
 npm install react-native-calendars react-native-vector-icons react-native-popup-menu @react-navigation/native @react-navigation/bottom-tabs react-native-gesture-handler react-native-reanimated@3.16.7 react-native-screens
+
+# khai báo thư viện bài 11
+npm install expo expo-av react-native-vector-icons @react-navigation/native @react-navigation/stack react-native-gesture-handler react-native-reanimated @react-native-community/slider react-native-screens
