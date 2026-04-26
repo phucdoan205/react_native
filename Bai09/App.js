@@ -1,161 +1,205 @@
-import React from "react";
-import { NavigationContainer } from "@react-navigation/native";
-import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { HomeScreen } from "./Animation";
-import { View, Text, StyleSheet, Dimensions, Platform } from "react-native";
-import { Provider as PaperProvider } from "react-native-paper";
-import { LinearGradient } from "expo-linear-gradient"; // Đảm bảo đã cài expo-linear-gradient
-import { MaterialIcons } from "@expo/vector-icons";
-
-const { width } = Dimensions.get("window");
-const Stack = createNativeStackNavigator();
-
-// Màn hình Screen2 - Nơi hiển thị kết quả với phong cách lung linh
-const Screen2 = ({ route }) => {
-  const { param1, param2 } = route.params;
-
-  return (
-    <LinearGradient colors={["#667eea", "#764ba2"]} style={styles.container2}>
-      {/* Vòng tròn trang trí nền tạo độ lung linh */}
-      <View style={styles.circleDecoration} />
-
-      <View style={styles.glassCard}>
-        <MaterialIcons
-          name="verified"
-          size={60}
-          color="#00E676"
-          style={styles.iconHeader}
-        />
-
-        <Text style={styles.title}>Dữ Liệu Đã Nhận</Text>
-
-        <View style={styles.infoRow}>
-          <Text style={styles.label}>Tham số 1:</Text>
-          <Text style={styles.value}>{param1}</Text>
-        </View>
-
-        <View style={styles.infoRow}>
-          <Text style={styles.label}>Tham số 2:</Text>
-          <Text style={styles.value}>{param2}</Text>
-        </View>
-
-        <Text style={styles.motivationText}>
-          "Mọi chuyển động lớn đều bắt đầu từ những bước nhỏ nhất." ✨
-        </Text>
-      </View>
-    </LinearGradient>
-  );
-};
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  Alert,
+  StyleSheet,
+  ActivityIndicator,
+  StatusBar,
+  SafeAreaView,
+} from "react-native";
+import { fetchPosts } from "./Api";
 
 export default function App() {
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadPosts = async () => {
+      try {
+        const data = await fetchPosts();
+        setPosts(data);
+      } catch (error) {
+        Alert.alert("Opps!", "Có chút trục trặc khi kết nối, thử lại nhé!");
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadPosts();
+  }, []);
+
+  const showPostDetails = (post) => {
+    Alert.alert("🌟 Thông điệp cho bạn", post.body);
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#10b981" />
+        <Text style={styles.loadingText}>Đang khởi tạo năng lượng...</Text>
+      </View>
+    );
+  }
+
   return (
-    <PaperProvider>
-      <NavigationContainer>
-        <Stack.Navigator
-          initialRouteName="Home"
-          screenOptions={{
-            // Đồng bộ màu Header với màu Gradient nền
-            headerStyle: {
-              backgroundColor: "#667eea",
-            },
-            headerTintColor: "#fff",
-            headerTitleStyle: {
-              fontWeight: "800",
-              fontSize: 18,
-            },
-            headerTitleAlign: "center",
-            headerShadowVisible: false, // Xóa đường kẻ header
-          }}
-        >
-          <Stack.Screen
-            name="Home"
-            component={HomeScreen}
-            options={{ title: "ANIMATION LAB" }}
-          />
-          <Stack.Screen
-            name="Screen2"
-            component={Screen2}
-            options={{ title: "KẾT QUẢ ROUTE" }}
-          />
-        </Stack.Navigator>
-      </NavigationContainer>
-    </PaperProvider>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" />
+
+      {/* Header rực rỡ năng lượng */}
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.greeting}>Chào ngày mới! 👋</Text>
+          <Text style={styles.title}>Bảng Tin Tư Duy</Text>
+        </View>
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{posts.length} Bài viết</Text>
+        </View>
+      </View>
+
+      <FlatList
+        data={posts}
+        contentContainerStyle={styles.listContent}
+        keyExtractor={(item) => item.id.toString()}
+        showsVerticalScrollIndicator={false}
+        renderItem={({ item, index }) => (
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => showPostDetails(item)}
+            style={styles.itemCard}
+          >
+            <View
+              style={[
+                styles.iconBox,
+                { backgroundColor: index % 2 === 0 ? "#e0f2fe" : "#dcfce7" },
+              ]}
+            >
+              <Text style={{ fontSize: 20 }}>
+                {index % 2 === 0 ? "🚀" : "💡"}
+              </Text>
+            </View>
+
+            <View style={styles.textContainer}>
+              <Text numberOfLines={1} style={styles.itemTitle}>
+                {item.title}
+              </Text>
+              <Text numberOfLines={1} style={styles.itemDescription}>
+                Khám phá ngay để bứt phá giới hạn...
+              </Text>
+            </View>
+
+            <View style={styles.arrowContainer}>
+              <Text style={styles.arrow}>→</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+      />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container2: {
+  container: {
+    flex: 1,
+    backgroundColor: "#F3F4F6", // Nền xám cực nhẹ để các card trắng nổi lên
+  },
+  loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    backgroundColor: "#FFFFFF",
   },
-  // Hiệu ứng vòng tròn mờ ảo phía sau
-  circleDecoration: {
-    position: "absolute",
-    width: 300,
-    height: 300,
-    borderRadius: 150,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    top: -50,
-    right: -50,
-  },
-  glassCard: {
-    width: "100%",
-    maxWidth: 400,
-    backgroundColor: "rgba(255, 255, 255, 0.15)",
-    borderRadius: 30,
-    padding: 30,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.3)",
-    // Đổ bóng hiện đại
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 15 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
-    ...Platform.select({
-      web: { backdropFilter: "blur(15px)" },
-    }),
-  },
-  iconHeader: {
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "900",
-    color: "#fff",
-    marginBottom: 25,
-    letterSpacing: 1,
-  },
-  infoRow: {
-    flexDirection: "row",
-    backgroundColor: "rgba(0,0,0,0.1)",
-    padding: 15,
-    borderRadius: 15,
-    width: "100%",
-    justifyContent: "space-between",
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.05)",
-  },
-  label: {
-    color: "rgba(255,255,255,0.7)",
-    fontSize: 14,
+  loadingText: {
+    marginTop: 15,
+    fontSize: 16,
+    color: "#059669",
     fontWeight: "600",
   },
-  value: {
+  header: {
+    paddingHorizontal: 25,
+    paddingVertical: 30,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    // Đổ bóng nhẹ nhàng, thanh thoát
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.05,
+    shadowRadius: 15,
+    elevation: 5,
+  },
+  greeting: {
+    fontSize: 14,
+    color: "#6B7280",
+    fontWeight: "500",
+    marginBottom: 4,
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: "800",
+    color: "#111827",
+  },
+  badge: {
+    backgroundColor: "#10b981",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  badgeText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: 12,
     fontWeight: "bold",
   },
-  motivationText: {
-    marginTop: 20,
-    color: "rgba(255,255,255,0.6)",
+  listContent: {
+    padding: 20,
+    paddingTop: 25,
+  },
+  itemCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 18,
+    borderRadius: 24,
+    backgroundColor: "#FFFFFF",
+    marginBottom: 16,
+    // Hiệu ứng card hiện đại
+    shadowColor: "#312e81",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  iconBox: {
+    width: 55,
+    height: 55,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 15,
+  },
+  textContainer: {
+    flex: 1,
+  },
+  itemTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#1F2937",
+    marginBottom: 5,
+    textTransform: "capitalize",
+  },
+  itemDescription: {
     fontSize: 13,
-    fontStyle: "italic",
-    textAlign: "center",
-    lineHeight: 20,
+    color: "#9CA3AF",
+  },
+  arrowContainer: {
+    marginLeft: 10,
+  },
+  arrow: {
+    fontSize: 20,
+    color: "#D1D5DB",
+    fontWeight: "300",
   },
 });
