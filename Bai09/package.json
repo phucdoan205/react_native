@@ -20,6 +20,7 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "expo": "~54.0.33",
+    "expo-linear-gradient": "^55.0.13",
     "expo-status-bar": "~3.0.9",
     "express": "^5.2.1",
     "mongoose": "^9.5.0",

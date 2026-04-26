@@ -1,97 +1,105 @@
-const express = require("express"); // Import thư viện Express
-const mongoose = require("mongoose"); // Import thư viện Mongoose để làm việc với MongoDB
-const cors = require("cors"); // Import thư viện CORS để cho phép yêu cầu từ các nguồn khác
-const bodyParser = require("body-parser"); // Import thư viện body-parser để phân tích dữ liệu từ request
-require("dotenv").config(); // Import dotenv để sử dụng biến môi trường
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+const bodyParser = require("body-parser");
+require("dotenv").config();
 
-const app = express(); // Khởi tạo ứng dụng Express
-const PORT = 5000; // Cổng mà server sẽ lắng nghe
+const app = express();
+const PORT = process.env.PORT || 5000; // Sử dụng biến môi trường hoặc cổng 5000
 
-// Kết nối MongoDB
+// --- KẾT NỐI MONGODB (ĐÃ SỬA LỖI) ---
+// Đã xóa useNewUrlParser và useUnifiedTopology vì chúng không còn cần thiết ở phiên bản mới
 mongoose
-  .connect("mongodb://localhost:27017/lab9", {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => console.log("MongoDB connected")) // Log khi kết nối thành công
-  .catch((err) => console.error("MongoDB connection error:", err)); // Log lỗi nếu có
+  .connect("mongodb://localhost:27017/lab9")
+  .then(() => console.log("✅ MongoDB connected successfully"))
+  .catch((err) => console.error("❌ MongoDB connection error:", err));
 
 // Middleware
-app.use(cors()); // Cho phép CORS
-app.use(bodyParser.json()); // Phân tích dữ liệu JSON từ request
+app.use(cors());
+app.use(bodyParser.json());
 
 // Định nghĩa schema và model cho bạn bè
 const friendSchema = new mongoose.Schema({
-  name: { type: String, required: true }, // Tên bạn bè
-  phone: { type: String, required: true }, // Số điện thoại
-  email: { type: String, required: true }, // Địa chỉ email
-  avatar: { type: String, required: true }, // URL ảnh đại diện
+  name: { type: String, required: true },
+  phone: { type: String, required: true },
+  email: { type: String, required: true },
+  avatar: { type: String, required: true },
 });
 
-const Friend = mongoose.model("Friend", friendSchema); // Tạo model từ schema
+const Friend = mongoose.model("Friend", friendSchema);
 
-// API endpoint để lấy danh sách bạn bè
+// --- API ENDPOINTS ---
+
+// 1. Lấy danh sách bạn bè (Có hỗ trợ tìm kiếm)
 app.get("/friends", async (req, res) => {
   try {
-    const { search } = req.query; // Lấy tham số tìm kiếm từ query
-    let friends;
+    const { search } = req.query;
+    let query = {};
 
     if (search) {
-      // Nếu có tham số tìm kiếm, tìm kiếm theo tên
-      friends = await Friend.find({ name: new RegExp(search, "i") }); // Tìm kiếm không phân biệt chữ hoa chữ thường
-    } else {
-      // Nếu không có tham số tìm kiếm, lấy tất cả bạn bè
-      friends = await Friend.find();
+      // Tìm kiếm theo tên (không phân biệt hoa thường)
+      query = { name: { $regex: search, $options: "i" } };
     }
 
-    res.json(friends); // Trả dữ liệu về cho client
+    const friends = await Friend.find(query);
+    res.json(friends);
   } catch (error) {
-    res.status(500).json({ message: "Error fetching friends" }); // Trả lỗi nếu có
+    res
+      .status(500)
+      .json({ message: "Error fetching friends", error: error.message });
   }
 });
 
-// API endpoint để thêm bạn bè
+// 2. Thêm bạn bè mới
 app.post("/friends", async (req, res) => {
   try {
-    const newFriend = new Friend(req.body); // Tạo mới một bạn bè từ dữ liệu request
-    await newFriend.save(); // Lưu bạn bè vào MongoDB
-    res.status(201).json(newFriend); // Trả về bạn bè mới được tạo
+    const newFriend = new Friend(req.body);
+    await newFriend.save();
+    res.status(201).json(newFriend);
   } catch (error) {
-    res.status(500).json({ message: "Error adding friend" }); // Trả lỗi nếu có
+    res
+      .status(500)
+      .json({ message: "Error adding friend", error: error.message });
   }
 });
 
-// Cập nhật thông tin bạn bè
+// 3. Cập nhật thông tin bạn bè
 app.put("/friends/:id", async (req, res) => {
   const { id } = req.params;
   try {
     const updatedFriend = await Friend.findByIdAndUpdate(id, req.body, {
-      new: true,
-    }); // Cập nhật bạn bè
+      new: true, // Trả về object sau khi đã cập nhật
+      runValidators: true, // Đảm bảo dữ liệu mới vẫn đúng validate của Schema
+    });
+
     if (!updatedFriend) {
-      return res.status(404).send("Friend not found"); // Nếu không tìm thấy bạn bè
+      return res.status(404).json({ message: "Friend not found" });
     }
-    res.json(updatedFriend); // Trả về bạn bè đã được cập nhật
+    res.json(updatedFriend);
   } catch (error) {
-    res.status(500).json({ message: "Error updating friend" }); // Trả lỗi nếu có
+    res
+      .status(500)
+      .json({ message: "Error updating friend", error: error.message });
   }
 });
 
-// Xóa bạn bè
+// 4. Xóa bạn bè
 app.delete("/friends/:id", async (req, res) => {
   const { id } = req.params;
   try {
-    const deletedFriend = await Friend.findByIdAndDelete(id); // Xóa bạn bè
+    const deletedFriend = await Friend.findByIdAndDelete(id);
     if (!deletedFriend) {
-      return res.status(404).send("Friend not found"); // Nếu không tìm thấy bạn bè
+      return res.status(404).json({ message: "Friend not found" });
     }
-    res.status(204).send(); // Trả về trạng thái 204 No Content
+    res.status(200).json({ message: "Deleted successfully" }); // Thay vì 204 để client dễ nhận diện hơn
   } catch (error) {
-    res.status(500).json({ message: "Error deleting friend" }); // Trả lỗi nếu có
+    res
+      .status(500)
+      .json({ message: "Error deleting friend", error: error.message });
   }
 });
 
 // Bắt đầu server
 app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`); // Log khi server bắt đầu
+  console.log(`🚀 Server is running on http://localhost:${PORT}`);
 });

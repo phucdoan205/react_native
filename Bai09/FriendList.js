@@ -1,4 +1,4 @@
-import React, { useState } from "react"; // Nhập các hook từ React
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -9,232 +9,313 @@ import {
   TouchableOpacity,
   Image,
   Modal,
-} from "react-native"; // Nhập các thành phần từ React Native
-import axios from "axios"; // Nhập thư viện axios để thực hiện các yêu cầu HTTP
-import { useFocusEffect } from "@react-navigation/native"; // Nhập hook để xử lý khi màn hình được hiển thị
-import Icon from "react-native-vector-icons/MaterialIcons"; // Nhập biểu tượng từ thư viện Material Icons
+  Dimensions,
+  Platform, // Thêm Platform để xử lý riêng cho Web nếu cần
+} from "react-native";
+import axios from "axios";
+import { useFocusEffect } from "@react-navigation/native";
+// Sử dụng thư viện icon của Expo để hỗ trợ Web tốt nhất
+import { MaterialIcons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
-const API_URL = "http://localhost:5000/friends"; // Đường dẫn API để lấy danh sách bạn bè
+const { width } = Dimensions.get("window");
+const API_URL = "http://localhost:5000/friends";
 
 const FriendList = ({ navigation }) => {
-  // Component chính nhận navigation prop
-  const [friends, setFriends] = useState([]); // State để lưu danh sách bạn bè
-  const [searchQuery, setSearchQuery] = useState(""); // State để lưu truy vấn tìm kiếm
-  const [filteredFriends, setFilteredFriends] = useState([]); // State để lưu danh sách bạn bè đã lọc
-  const [modalVisible, setModalVisible] = useState(false); // State để kiểm soát hiển thị modal
-  const [selectedFriend, setSelectedFriend] = useState(null); // State để lưu bạn bè được chọn
+  const [friends, setFriends] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedFriend, setSelectedFriend] = useState(null);
 
   const fetchFriends = async () => {
-    // Hàm lấy danh sách bạn bè từ API
     try {
       const response = await axios.get(API_URL, {
-        params: { search: searchQuery }, // Thêm tham số tìm kiếm
+        params: { search: searchQuery },
       });
-      setFriends(response.data); // Cập nhật danh sách bạn bè
-      setFilteredFriends(response.data); // Cập nhật danh sách bài bè đã lọc
+      setFriends(response.data);
     } catch (error) {
-      Alert.alert("Error", "Error fetching friends"); // Hiển thị thông báo lỗi nếu có
+      // Trên Web Alert.alert hoạt động như window.confirm/alert
+      if (Platform.OS === "web") {
+        alert("Không thể tải danh sách bạn bè");
+      } else {
+        Alert.alert("Lỗi", "Không thể tải danh sách bạn bè");
+      }
     }
   };
 
   useFocusEffect(
-    // Hook để gọi lại hàm khi màn hình được hiển thị
     React.useCallback(() => {
-      fetchFriends(); // Gọi hàm lấy danh sách bạn bè
-    }, [searchQuery]), // Chạy lại khi searchQuery thay đổi
+      fetchFriends();
+    }, [searchQuery]),
   );
 
-  const handleSearch = (query) => {
-    // Hàm để xử lý tìm kiếm
-    setSearchQuery(query); // Cập nhật truy vấn tìm kiếm
-  };
-
   const openModal = (friend) => {
-    // Hàm mở modal với thông tin bạn bè được chọn
-    setSelectedFriend(friend); // Lưu thông tin bạn bè được chọn
-    setModalVisible(true); // Hiển thị modal
-  };
-
-  const handleEdit = () => {
-    // Hàm để xử lý cập nhật bạn bè
-    if (selectedFriend) {
-      // Kiểm tra xem có bạn bè nào được chọn không
-      navigation.navigate("AddFriend", { friend: selectedFriend }); // Điều hướng đến trang thêm/cập nhật bạn bè
-      setModalVisible(false); // Đóng modal
-    }
+    setSelectedFriend(friend);
+    setModalVisible(true);
   };
 
   const handleDelete = async () => {
-    // Hàm để xử lý xóa bạn bè
     if (selectedFriend) {
-      // Kiểm tra xem có bạn bè nào được chọn không
-      try {
-        await axios.delete(`${API_URL}/${selectedFriend._id}`); // Gửi yêu cầu DELETE đến API
-        Alert.alert("Success", "Friend has been deleted!"); // Hiển thị thông báo thành công
-        fetchFriends(); // Gọi lại hàm để cập nhật danh sách bạn bè
-      } catch (error) {
-        Alert.alert("Error", "Error deleting friend"); // Hiển thị thông báo lỗi nếu có
-      } finally {
-        setModalVisible(false); // Đóng modal
+      const confirmDelete = () => {
+        axios
+          .delete(`${API_URL}/${selectedFriend._id}`)
+          .then(() => {
+            fetchFriends();
+            setModalVisible(false);
+          })
+          .catch(() => alert("Xóa thất bại"));
+      };
+
+      if (Platform.OS === "web") {
+        if (window.confirm(`Bạn có chắc muốn xóa ${selectedFriend.name}?`)) {
+          confirmDelete();
+        }
+      } else {
+        Alert.alert("Xác nhận", "Bạn có chắc chắn muốn xóa?", [
+          { text: "Hủy", style: "cancel" },
+          { text: "Xóa", style: "destructive", onPress: confirmDelete },
+        ]);
       }
     }
   };
 
   return (
-    <View style={styles.container}>
-      <TextInput
-        placeholder="Search friends" // Placeholder cho ô tìm kiếm
-        value={searchQuery} // Giá trị của ô tìm kiếm
-        onChangeText={handleSearch} // Hàm xử lý khi thay đổi văn bản
-        style={styles.input} // Style cho ô tìm kiếm
-      />
+    <LinearGradient colors={["#667eea", "#764ba2"]} style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.greeting}>Kết nối & Lan tỏa ✨</Text>
+        <Text style={styles.subGreeting}>
+          Danh sách những người bạn tuyệt vời
+        </Text>
+      </View>
+
+      {/* Thanh tìm kiếm */}
+      <View style={styles.searchContainer}>
+        <MaterialIcons
+          name="search"
+          size={22}
+          color="#fff"
+          style={styles.searchIcon}
+        />
+        <TextInput
+          placeholder="Tìm kiếm tâm giao..."
+          placeholderTextColor="rgba(255,255,255,0.7)"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          style={styles.input}
+        />
+      </View>
 
       <FlatList
-        data={filteredFriends} // Dữ liệu để hiển thị trong danh sách
-        keyExtractor={(item) => item._id} // Chỉ định key cho từng phần tử
+        data={friends}
+        keyExtractor={(item) => item._id}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 100 }}
         renderItem={({ item }) => (
-          <View style={styles.friendItem}>
-            <Image
-              source={{ uri: item.avatar }} // Hiển thị ảnh đại diện
-              style={styles.avatar} // Style cho ảnh
-            />
+          <View style={styles.friendCard}>
+            <Image source={{ uri: item.avatar }} style={styles.avatar} />
             <View style={styles.friendInfo}>
               <Text style={styles.friendName}>{item.name}</Text>
-              <Text style={styles.friendDetail}>{item.phone}</Text>
-              <Text style={styles.friendDetail}>{item.email}</Text>
+              <View style={styles.rowInfo}>
+                <MaterialIcons name="phone" size={14} color="#ddd" />
+                <Text style={styles.friendDetail}>{item.phone}</Text>
+              </View>
+              <View style={styles.rowInfo}>
+                <MaterialIcons name="email" size={14} color="#ddd" />
+                <Text style={styles.friendDetail}>{item.email}</Text>
+              </View>
             </View>
             <TouchableOpacity
-              style={styles.menuButton} // Nút mở modal
-              onPress={() => openModal(item)} // Gọi hàm mở modal với bạn bè được chọn
+              style={styles.moreButton}
+              onPress={() => openModal(item)}
             >
-              <Text style={styles.menuText}>⋮</Text>
+              <MaterialIcons name="more-vert" size={28} color="#fff" />
             </TouchableOpacity>
           </View>
         )}
       />
 
+      {/* Nút thêm mới */}
       <TouchableOpacity
-        style={styles.addButton} // Nút thêm bạn
-        onPress={() => navigation.navigate("AddFriend")} // Điều hướng đến trang thêm bạn
+        activeOpacity={0.8}
+        style={styles.addButton}
+        onPress={() => navigation.navigate("AddFriend")}
       >
-        <Text style={styles.addButtonText}>+</Text>
+        <LinearGradient
+          colors={["#00c6ff", "#0072ff"]}
+          style={styles.addGradient}
+        >
+          <MaterialIcons name="person-add" size={30} color="#fff" />
+        </LinearGradient>
       </TouchableOpacity>
 
-      {/* Modal cho các tùy chọn Cập nhật và Xóa */}
-      <Modal
-        transparent={true} // Modal trong suốt
-        visible={modalVisible} // Hiển thị modal
-        animationType="slide" // Hiệu ứng mở modal
-      >
-        <View style={styles.modalContainer}>
+      {/* Modal Tùy chọn */}
+      <Modal transparent visible={modalVisible} animationType="fade">
+        <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Options</Text>
+            <Text style={styles.modalTitle}>
+              Tùy chọn cho {selectedFriend?.name}
+            </Text>
 
-            <TouchableOpacity style={styles.modalButton} onPress={handleEdit}>
-              <Icon name="edit" size={20} color="#ffffff" />
-              <Text style={styles.modalButtonText}>Update</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.modalButton} onPress={handleDelete}>
-              <Icon name="delete" size={20} color="#ffffff" />
-              <Text style={styles.modalButtonText}>Delete</Text>
+            <TouchableOpacity
+              style={[styles.modalAction, { backgroundColor: "#4c669f" }]}
+              onPress={() => {
+                navigation.navigate("AddFriend", { friend: selectedFriend });
+                setModalVisible(false);
+              }}
+            >
+              <MaterialIcons name="edit" size={22} color="#fff" />
+              <Text style={styles.modalActionText}>Chỉnh sửa thông tin</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.closeButton}
+              style={[styles.modalAction, { backgroundColor: "#ff4b5c" }]}
+              onPress={handleDelete}
+            >
+              <MaterialIcons name="delete-outline" size={22} color="#fff" />
+              <Text style={styles.modalActionText}>Xóa khỏi danh sách</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.cancelAction}
               onPress={() => setModalVisible(false)}
             >
-              <Text style={styles.modalButtonText}>Close</Text>
+              <Text style={styles.cancelText}>Đóng</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
-    </View>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#f8f9fa" },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ced4da",
-    marginBottom: 10,
-    padding: 10,
-    borderRadius: 5,
-    backgroundColor: "#ffffff",
+  container: {
+    flex: 1,
+    paddingHorizontal: Platform.OS === "web" ? "10%" : 20, // Canh giữa hơn trên màn hình Web rộng
   },
-  friendItem: {
+  header: {
+    marginTop: Platform.OS === "web" ? 30 : 50,
+    marginBottom: 20,
+  },
+  greeting: { fontSize: 28, fontWeight: "bold", color: "#fff" },
+  subGreeting: { fontSize: 14, color: "rgba(255,255,255,0.8)", marginTop: 5 },
+
+  searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 15,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    borderRadius: 15,
+    paddingHorizontal: 15,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.3)",
+    ...Platform.select({
+      web: { outlineStyle: "none" }, // Xóa viền đen khi focus trên Web
+    }),
+  },
+  input: {
+    flex: 1,
+    height: 45,
+    color: "#fff",
+    fontSize: 16,
+    ...Platform.select({
+      web: { outlineStyle: "none" },
+    }),
+  },
+  searchIcon: { marginRight: 10 },
+
+  friendCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
     padding: 15,
-    borderRadius: 5,
-    backgroundColor: "#ffffff",
+    borderRadius: 20,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
+    // Shadow cho Mobile
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 5,
+    // Shadow cho Web
+    ...Platform.select({
+      web: { cursor: "pointer", transition: "0.3s" },
+    }),
   },
   avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 15,
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    borderWidth: 2,
+    borderColor: "#fff",
   },
-  friendInfo: { flex: 1 },
-  friendName: { fontSize: 18, fontWeight: "bold" },
-  friendDetail: { color: "#6c757d" },
-  menuButton: { marginLeft: 10 },
-  menuText: { fontSize: 24 },
+  friendInfo: { flex: 1, marginLeft: 15 },
+  friendName: {
+    fontSize: 19,
+    fontWeight: "800",
+    color: "#fff",
+    marginBottom: 5,
+  },
+  rowInfo: { flexDirection: "row", alignItems: "center", marginBottom: 2 },
+  friendDetail: { color: "#eee", fontSize: 13, marginLeft: 5 },
+  moreButton: { padding: 5 },
+
   addButton: {
     position: "absolute",
-    bottom: 20,
-    right: 20,
-    width: 60,
-    height: 60,
-    borderRadius: 40,
-    backgroundColor: "#28a745",
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 5,
+    bottom: 30,
+    right: Platform.OS === "web" ? "12%" : 25,
+    zIndex: 999,
   },
-  addButtonText: { fontSize: 30, color: "#ffffff" },
-  modalContainer: {
-    flex: 1,
+  addGradient: {
+    width: 65,
+    height: 65,
+    borderRadius: 33,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    ...Platform.select({
+      web: { cursor: "pointer", boxShadow: "0px 10px 20px rgba(0,0,0,0.3)" },
+    }),
+  },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   modalContent: {
-    width: 250,
-    backgroundColor: "#ffffff",
-    borderRadius: 10,
-    padding: 20,
-    alignItems: "flex-start",
+    width: Platform.OS === "web" ? 400 : width * 0.85,
+    backgroundColor: "#fff",
+    borderRadius: 30,
+    padding: 25,
+    alignItems: "center",
   },
-  modalTitle: { fontSize: 20, fontWeight: "bold", marginBottom: 15 },
-  modalButton: {
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 20,
+    color: "#333",
+  },
+  modalAction: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#007BFF",
-    padding: 10,
-    borderRadius: 5,
-    marginBottom: 10,
     width: "100%",
+    padding: 15,
+    borderRadius: 15,
+    marginBottom: 12,
+    ...Platform.select({ web: { cursor: "pointer" } }),
   },
-  modalButtonText: {
-    color: "#ffffff",
-    textAlign: "center",
+  modalActionText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
     marginLeft: 10,
   },
-  closeButton: {
-    backgroundColor: "#ccc",
-    padding: 10,
-    borderRadius: 5,
-    width: "100%",
-    alignItems: "center",
-  },
+  cancelAction: { marginTop: 10, padding: 10 },
+  cancelText: { color: "#999", fontSize: 16, fontWeight: "500" },
 });
 
-export default FriendList; // Xuất component FriendList
+export default FriendList;
