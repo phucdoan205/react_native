@@ -1,4 +1,4 @@
-import React, { useState } from "react"; // Nhập React và useState từ thư viện React
+import React, { useState } from "react";
 import {
   View,
   TouchableOpacity,
@@ -7,31 +7,61 @@ import {
   Alert,
   Modal,
   BackHandler,
-} from "react-native"; // Nhập các thành phần cần thiết từ React Native
+  Platform,
+} from "react-native";
 
-// Component cho menu tùy chọn
 function OptionMenu() {
-  const [isDarkMode, setIsDarkMode] = useState(false); // Trạng thái cho chế độ tối
-  const [isInfoModalVisible, setIsInfoModalVisible] = useState(false); // Trạng thái hiển thị modal thông tin
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
 
-  // Hàm xử lý khi nhấn vào các tùy chọn menu
+  // --- LOGIC THOÁT ĐÃ ĐƯỢC CẬP NHẬT ---
+  const handleExitApp = () => {
+    if (Platform.OS === "web") {
+      // 1. Thử đóng tab ngay lập tức
+      window.close();
+
+      // 2. Kiểm tra nếu tab vẫn chưa đóng (do trình duyệt chặn script không được mở bởi window.open)
+      // Chúng ta sẽ điều hướng đến một trang trống hoặc thông báo cho người dùng
+      setTimeout(() => {
+        if (!window.closed) {
+          alert(
+            "Trình duyệt đã chặn lệnh đóng tab tự động. Vui lòng đóng tab thủ công bằng dấu (x) trên trình duyệt của bạn.",
+          );
+          // Tùy chọn: Điều hướng về Google hoặc trang trắng để "giả lập" việc thoát
+          // window.location.href = "about:blank";
+        }
+      }, 500);
+    } else {
+      // Cho Android/iOS
+      BackHandler.exitApp();
+    }
+  };
+
   const handleMenuPress = (option) => {
     switch (option) {
       case "Mode":
-        setIsDarkMode(!isDarkMode); // Chuyển đổi chế độ giữa sáng và tối
+        setIsDarkMode(!isDarkMode);
         Alert.alert(
           "Chế độ",
           !isDarkMode ? "Chế độ tối đã được bật" : "Chế độ tối đã được tắt",
-        ); // Thông báo chế độ đang được bật
+        );
         break;
       case "Info":
-        setIsInfoModalVisible(true); // Hiển thị modal thông tin
+        setIsInfoModalVisible(true);
         break;
       case "Exit":
-        Alert.alert("Thoát", "Bạn có chắc chắn muốn thoát?", [
-          { text: "Không", style: "cancel" },
-          { text: "Có", onPress: () => BackHandler.exitApp() }, // Thoát ứng dụng
-        ]);
+        // Alert này hiển thị đồng nhất trên cả Web và Mobile
+        Alert.alert(
+          "Xác nhận",
+          "Bạn có chắc chắn muốn đóng ứng dụng/tab này không?",
+          [
+            { text: "Hủy", style: "cancel" },
+            {
+              text: "Đồng ý",
+              onPress: handleExitApp,
+            },
+          ],
+        );
         break;
       default:
         break;
@@ -40,7 +70,6 @@ function OptionMenu() {
 
   return (
     <View style={styles.optionMenuContainer}>
-      {/* Nút cho chế độ sáng/tối */}
       <TouchableOpacity
         style={[
           styles.optionButton,
@@ -58,7 +87,6 @@ function OptionMenu() {
         </Text>
       </TouchableOpacity>
 
-      {/* Nút thông tin */}
       <TouchableOpacity
         style={[
           styles.optionButton,
@@ -76,7 +104,6 @@ function OptionMenu() {
         </Text>
       </TouchableOpacity>
 
-      {/* Nút thoát */}
       <TouchableOpacity
         style={[
           styles.optionButton,
@@ -96,10 +123,10 @@ function OptionMenu() {
 
       {/* Modal Thông Tin */}
       <Modal
-        transparent={true} // Modal trong suốt
-        animationType="slide" // Hiệu ứng trượt cho modal
-        visible={isInfoModalVisible} // Điều kiện hiển thị modal
-        onRequestClose={() => setIsInfoModalVisible(false)} // Đóng modal khi nhấn nút quay lại
+        transparent={true}
+        animationType="fade"
+        visible={isInfoModalVisible}
+        onRequestClose={() => setIsInfoModalVisible(false)}
       >
         <View style={styles.modalContainer}>
           <View
@@ -116,22 +143,30 @@ function OptionMenu() {
             >
               Thông Tin
             </Text>
-            <Text style={{ color: isDarkMode ? "#fff" : "#000" }}>
-              Tên: Nguyễn Văn A
+            <Text
+              style={[styles.infoText, { color: isDarkMode ? "#ccc" : "#333" }]}
+            >
+              👤 Nguyễn Văn A
             </Text>
-            <Text style={{ color: isDarkMode ? "#fff" : "#000" }}>
-              Tuổi: 20
+            <Text
+              style={[styles.infoText, { color: isDarkMode ? "#ccc" : "#333" }]}
+            >
+              🎂 20 tuổi
             </Text>
-            <Text style={{ color: isDarkMode ? "#fff" : "#000" }}>
-              Lớp: 20CTT1
+            <Text
+              style={[styles.infoText, { color: isDarkMode ? "#ccc" : "#333" }]}
+            >
+              🎓 Lớp: 20CTT1
             </Text>
-            <Text style={{ color: isDarkMode ? "#fff" : "#000" }}>
-              Mã số sinh viên: 123456
+            <Text
+              style={[styles.infoText, { color: isDarkMode ? "#ccc" : "#333" }]}
+            >
+              🆔 MSSV: 123456
             </Text>
 
             <TouchableOpacity
               style={styles.closeButton}
-              onPress={() => setIsInfoModalVisible(false)} // Đóng modal thông tin
+              onPress={() => setIsInfoModalVisible(false)}
             >
               <Text style={styles.closeButtonText}>Đóng</Text>
             </TouchableOpacity>
@@ -142,46 +177,56 @@ function OptionMenu() {
   );
 }
 
-// Các kiểu dáng cho giao diện
 const styles = StyleSheet.create({
   optionMenuContainer: {
-    flexDirection: "row", // Sắp xếp theo hàng ngang
-    paddingRight: 10,
+    flexDirection: "row",
+    padding: 10,
+    justifyContent: "center",
   },
   optionButton: {
     marginHorizontal: 5,
     padding: 10,
     borderRadius: 10,
+    minWidth: 90,
+    alignItems: "center",
   },
   optionText: {
     fontSize: 16,
+    fontWeight: "600",
   },
   modalContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)", // Nền tối cho modal
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
   },
   modalContent: {
-    width: "80%", // Chiều rộng cho modal
-    padding: 20,
-    borderRadius: 10,
+    width: "85%",
+    maxWidth: 400,
+    padding: 25,
+    borderRadius: 20,
     alignItems: "center",
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: "bold",
-    marginBottom: 10,
+    marginBottom: 15,
+  },
+  infoText: {
+    fontSize: 16,
+    marginVertical: 4,
   },
   closeButton: {
-    marginTop: 15,
-    backgroundColor: "#6200EE", // Màu nền cho nút đóng
-    padding: 10,
-    borderRadius: 5,
+    marginTop: 20,
+    backgroundColor: "#6200EE",
+    paddingVertical: 10,
+    paddingHorizontal: 30,
+    borderRadius: 8,
   },
   closeButtonText: {
-    color: "#fff", // Màu chữ cho nút đóng
+    color: "#fff",
+    fontWeight: "bold",
   },
 });
 
-export default OptionMenu; // Xuất component OptionMenu
+export default OptionMenu;

@@ -7,180 +7,185 @@ import {
   FlatList,
   Modal,
   TextInput,
-  Button,
   TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+  StatusBar,
+  Dimensions,
 } from "react-native";
 import { Calendar } from "react-native-calendars";
-import Icon from "react-native-vector-icons/Ionicons";
+// Sử dụng Lucide để icon hiển thị mượt mà trên mọi nền tảng
+import {
+  Calendar as CalendarIcon,
+  Plus,
+  X,
+  Trash2,
+  Edit3,
+  Sparkles,
+} from "lucide-react-native";
 
-// Hàm giả lập để lấy tử vi cho một ngày
+const { width } = Dimensions.get("window");
+
 const gethoroscope = (date) => {
   const horoscopes = {
-    "2025-02-01":
-      "Ngày tốt để bắt đầu một dự án mới, sự nghiệp có thể thăng tiến.",
-    "2025-02-02":
-      "Ngày này có thể mang lại tin vui về tình cảm, hãy mở lòng hơn.",
-    "2025-02-03": "Cẩn thận với các quyết định tài chính, không nên vội vàng.",
-    // ... (Các ngày khác tương tự như trong ảnh)
-    "2025-03-31":
-      "Ngày cuối cùng của tháng, hãy chuẩn bị cho những điều mới mẻ sắp tới.",
+    "2026-05-01":
+      "🌟 Hào quang rực rỡ! Hôm nay là ngày bạn khẳng định vị thế bản thân.",
+    "2026-02-02":
+      "💖 Vũ trụ đang gửi tín hiệu tình yêu đến bạn. Hãy cười thật nhiều nhé!",
+    "2026-02-03":
+      "💰 Tài lộc nở rộ, một khoản thưởng bất ngờ đang chờ đợi bạn.",
   };
-  return horoscopes[date] || "Chưa có thông tin tử vi.";
+  return (
+    horoscopes[date] ||
+    "🌈 Mỗi bước đi đều dẫn đến thành công. Cố gắng lên bạn nhé!"
+  );
 };
 
 function HomeScreen() {
-  // Các trạng thái của ứng dụng
-  const [markedDates, setMarkedDates] = useState({}); // Ngày đã đánh dấu
-  const [selectedDay, setSelectedDay] = useState(""); // Ngày đang chọn
-  const [horoscope, setHoroscope] = useState(""); // Thông điệp tử vi cho ngày được chọn
-  const [modalVisible, setModalVisible] = useState(false); // Trạng thái hiển thị modal
-  const [eventDescription, setEventDescription] = useState(""); // Mô tả sự kiện
-  const [events, setEvents] = useState({}); // Danh sách các sự kiện theo ngày
-  const [editingIndex, setEditingIndex] = useState(null); // Chỉ số của sự kiện đang chỉnh sửa
+  const [markedDates, setMarkedDates] = useState({});
+  const [selectedDay, setSelectedDay] = useState("");
+  const [horoscope, setHoroscope] = useState("");
+  const [modalVisible, setModalVisible] = useState(false);
+  const [eventDescription, setEventDescription] = useState("");
+  const [events, setEvents] = useState({});
+  const [editingIndex, setEditingIndex] = useState(null);
 
-  // Hàm xử lý khi người dùng nhấn vào một ngày
   const onDayPress = (day) => {
-    const selectedDay = day.dateString; // Lấy ngày đã chọn
-    setSelectedDay(selectedDay); // Cập nhật ngày được chọn
-    setHoroscope(gethoroscope(selectedDay)); // Lấy thông điệp tử vi cho ngày đó
-
+    const dateStr = day.dateString;
+    setSelectedDay(dateStr);
+    setHoroscope(gethoroscope(dateStr));
     setMarkedDates({
-      [selectedDay]: {
+      [dateStr]: {
         selected: true,
-        marked: true,
-        selectedColor: "#6200EE", // Màu sắc cho ngày được chọn
+        selectedColor: "#6C63FF",
+        selectedTextColor: "#fff",
       },
     });
-
-    setEventDescription(""); // Reset mô tả sự kiện
-    setEditingIndex(null); // Đặt lại chỉ số chỉnh sửa
-    setModalVisible(true); // Hiển thị modal
-  };
-
-  // Hàm thêm sự kiện
-  const addEvent = () => {
-    if (!eventDescription.trim()) {
-      // Kiểm tra xem mô tả có rỗng không
-      Alert.alert("Error", "Vui lòng nhập mô tả sự kiện!");
-      return;
-    }
-
-    const newEvent = { description: eventDescription }; // Tạo sự kiện mới
-
-    setEvents((prevEvents) => {
-      const updatedEvents = { ...prevEvents }; // Sao chép sự kiện hiện tại
-      if (!updatedEvents[selectedDay]) {
-        updatedEvents[selectedDay] = []; // Nếu chưa có sự kiện cho ngày này, khởi tạo mảng
-      }
-
-      if (editingIndex !== null) {
-        updatedEvents[selectedDay][editingIndex] = newEvent; // Cập nhật sự kiện nếu đang chỉnh sửa
-      } else {
-        updatedEvents[selectedDay].push(newEvent); // Thêm sự kiện mới vào mảng
-      }
-      return updatedEvents;
-    });
-
-    Alert.alert("Thành công", "Sự kiện đã được thêm thành công!");
     setEventDescription("");
     setEditingIndex(null);
-    setModalVisible(false);
-  };
-
-  // Hàm chỉnh sửa sự kiện
-  const editEvent = (index) => {
-    setEventDescription(events[selectedDay][index].description);
-    setEditingIndex(index);
     setModalVisible(true);
   };
 
-  // Hàm xóa sự kiện
-  const deleteEvent = (index) => {
-    Alert.alert("Xóa", "Bạn có chắc chắn muốn xóa sự kiện này?", [
-      { text: "Hủy", style: "cancel" },
-      {
-        text: "Xóa",
-        onPress: () => {
-          setEvents((prevEvents) => {
-            const updatedEvents = { ...prevEvents };
-            updatedEvents[selectedDay].splice(index, 1);
-            return updatedEvents;
-          });
-        },
-      },
-    ]);
+  const addEvent = () => {
+    if (!eventDescription.trim())
+      return Alert.alert("Oops!", "Nhập nội dung đã nè ✨");
+
+    setEvents((prev) => {
+      const updated = { ...prev };
+      if (!updated[selectedDay]) updated[selectedDay] = [];
+      if (editingIndex !== null)
+        updated[selectedDay][editingIndex] = { description: eventDescription };
+      else updated[selectedDay].push({ description: eventDescription });
+      return updated;
+    });
+    setModalVisible(false);
   };
 
   const renderEventItem = ({ item, index }) => (
-    <View style={styles.eventContainer}>
+    <View style={styles.eventCard}>
       <Text style={styles.eventText}>{item.description}</Text>
       <View style={styles.eventActions}>
         <TouchableOpacity
-          style={styles.editButton}
-          onPress={() => editEvent(index)}
+          onPress={() => {
+            setEventDescription(item.description);
+            setEditingIndex(index);
+          }}
+          style={styles.iconBtn}
         >
-          <Icon name="pencil" size={16} color="#fff" />
-          <Text style={styles.buttonText}>Sửa</Text>
+          <Edit3 size={18} color="#6C63FF" />
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={() => deleteEvent(index)}
-        >
-          <Icon name="trash" size={16} color="#fff" />
-          <Text style={styles.buttonText}>Xóa</Text>
+        <TouchableOpacity onPress={() => {}} style={styles.iconBtn}>
+          <Trash2 size={18} color="#FF5E5E" />
         </TouchableOpacity>
       </View>
     </View>
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: "#FFEBEE" }]}>
-      <Calendar
-        onDayPress={onDayPress}
-        markedDates={markedDates}
-        style={styles.calendar}
-        theme={{
-          selectedDayBackgroundColor: "#6200EE",
-          arrowColor: "#6200EE",
-          todayTextColor: "#6200EE",
-        }}
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" />
+
+      {/* Background Decor Elements - Tạo hiệu ứng lung linh */}
+      <View
+        style={[
+          styles.blurBall,
+          { top: -50, right: -50, backgroundColor: "#FFD6FF" },
+        ]}
+      />
+      <View
+        style={[
+          styles.blurBall,
+          { bottom: 100, left: -80, backgroundColor: "#E7E9FF" },
+        ]}
       />
 
-      <Modal animationType="slide" transparent={false} visible={modalVisible}>
-        <View style={styles.modalContainer}>
-          <Text style={styles.selectedDateText}>
-            Ngày đã chọn: {selectedDay}
-          </Text>
-          <Text style={styles.horoscopeText}>Tử vi: {horoscope}</Text>
+      <View style={styles.content}>
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.headerTitle}>Mood Calendar</Text>
+            <Text style={styles.headerSubtitle}>Tưới mát tâm hồn mỗi ngày</Text>
+          </View>
+          <Sparkles color="#6C63FF" size={28} />
+        </View>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Nhập mô tả sự kiện..."
-            value={eventDescription}
-            onChangeText={setEventDescription}
-            multiline
-            numberOfLines={4}
+        <View style={styles.calendarWrapper}>
+          <Calendar
+            onDayPress={onDayPress}
+            markedDates={markedDates}
+            theme={{
+              calendarBackground: "transparent",
+              textSectionTitleColor: "#8E94A5",
+              selectedDayBackgroundColor: "#6C63FF",
+              todayTextColor: "#6C63FF",
+              dayTextColor: "#2D3436",
+              monthTextColor: "#2D3436",
+              textDayFontWeight: "500",
+              textMonthFontWeight: "bold",
+              arrowColor: "#6C63FF",
+            }}
           />
+        </View>
+      </View>
 
-          <TouchableOpacity style={styles.addButton} onPress={addEvent}>
-            <Text style={styles.addButtonText}>
-              {editingIndex !== null ? "Cập nhật Sự Kiện" : "Thêm Sự Kiện"}
-            </Text>
-          </TouchableOpacity>
-
-          <FlatList
-            data={events[selectedDay] || []}
-            keyExtractor={(item, index) => index.toString()}
-            renderItem={renderEventItem}
-            style={styles.eventList}
-          />
-
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={() => setModalVisible(false)}
+      <Modal animationType="fade" transparent visible={modalVisible}>
+        <View style={styles.modalOverlay}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={styles.modalContent}
           >
-            <Text style={styles.closeButtonText}>Đóng</Text>
-          </TouchableOpacity>
+            <View style={styles.modalHandle} />
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalDate}>{selectedDay}</Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <X size={24} color="#ABB3C5" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.glassCard}>
+              <Text style={styles.glassTitle}>✨ Thông điệp vũ trụ</Text>
+              <Text style={styles.glassText}>{horoscope}</Text>
+            </View>
+
+            <TextInput
+              style={styles.input}
+              placeholder="Ghi chú điều tuyệt vời..."
+              value={eventDescription}
+              onChangeText={setEventDescription}
+              multiline
+            />
+
+            <TouchableOpacity style={styles.mainBtn} onPress={addEvent}>
+              <Text style={styles.mainBtnText}>Lưu kỉ niệm</Text>
+              <Plus size={20} color="#fff" />
+            </TouchableOpacity>
+
+            <FlatList
+              data={events[selectedDay] || []}
+              renderItem={renderEventItem}
+              keyExtractor={(_, i) => i.toString()}
+              style={{ marginTop: 20 }}
+            />
+          </KeyboardAvoidingView>
         </View>
       </Modal>
     </View>
@@ -188,83 +193,104 @@ function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  calendar: {
-    marginBottom: 20,
-    height: 350,
-    borderRadius: 10,
-    overflow: "hidden",
+  container: { flex: 1, backgroundColor: "#FFFFFF" },
+  // Tạo hiệu ứng đốm mờ phía sau
+  blurBall: {
+    position: "absolute",
+    width: 250,
+    height: 250,
+    borderRadius: 125,
+    opacity: 0.6,
+    // Note: Trên web/mobile, filter blur cần thư viện nếu muốn xịn,
+    // ở đây dùng màu nhẹ để giả lập chiều sâu
   },
-  selectedDateText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginVertical: 10,
-    textAlign: "center",
-  },
-  horoscopeText: {
-    fontSize: 16,
-    color: "#FF5722",
-    marginBottom: 10,
-    textAlign: "center",
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: "center",
-    padding: 20,
-    backgroundColor: "#fff",
-  },
-  input: {
-    height: 80,
-    borderColor: "gray",
-    borderWidth: 1,
-    marginBottom: 10,
-    paddingHorizontal: 8,
-    borderRadius: 5,
-  },
-  eventContainer: {
-    padding: 10,
-    marginVertical: 5,
-    backgroundColor: "#6200EE",
-    borderRadius: 10,
-  },
-  eventText: { fontSize: 16, color: "#fff" },
-  eventActions: {
+  content: { flex: 1, paddingHorizontal: 24, paddingTop: 60 },
+  header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 5,
+    alignItems: "center",
+    marginBottom: 30,
   },
-  editButton: {
+  headerTitle: {
+    fontSize: 32,
+    fontWeight: "900",
+    color: "#1A1A1A",
+    letterSpacing: -0.5,
+  },
+  headerSubtitle: { fontSize: 15, color: "#7F8C8D", marginTop: 4 },
+  calendarWrapper: {
+    backgroundColor: "rgba(255, 255, 255, 0.8)",
+    borderRadius: 30,
+    padding: 10,
+    ...Platform.select({
+      ios: { shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 20 },
+      android: { elevation: 10 },
+      web: { boxShadow: "0px 10px 30px rgba(0,0,0,0.05)" },
+    }),
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.3)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 40,
+    borderTopRightRadius: 40,
+    padding: 30,
+    height: "80%",
+  },
+  modalHandle: {
+    width: 40,
+    height: 5,
+    backgroundColor: "#E0E0E0",
+    alignSelf: "center",
+    borderRadius: 10,
+    marginBottom: 20,
+  },
+  modalDate: { fontSize: 24, fontWeight: "bold", color: "#2D3436" },
+  glassCard: {
+    backgroundColor: "#F8F7FF",
+    borderRadius: 20,
+    padding: 20,
+    marginVertical: 20,
+    borderWidth: 1,
+    borderColor: "#EEECFF",
+  },
+  glassTitle: { fontWeight: "bold", color: "#6C63FF", marginBottom: 8 },
+  glassText: { color: "#4B4B4B", lineHeight: 22 },
+  input: {
+    backgroundColor: "#F5F6FA",
+    borderRadius: 18,
+    padding: 18,
+    fontSize: 16,
+    height: 80,
+    textAlignVertical: "top",
+  },
+  mainBtn: {
+    backgroundColor: "#6C63FF",
+    flexDirection: "row",
+    height: 60,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 20,
+    gap: 10,
+  },
+  mainBtnText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
+  eventCard: {
+    backgroundColor: "#fff",
+    padding: 16,
+    borderRadius: 15,
+    marginBottom: 12,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#2070FF",
-    padding: 5,
-    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: "#F0F0F0",
   },
-  deleteButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#D32F2F",
-    padding: 5,
-    borderRadius: 5,
-  },
-  buttonText: { color: "#fff", marginLeft: 5 },
-  eventList: { marginTop: 10 },
-  addButton: {
-    backgroundColor: "#6200EE",
-    padding: 10,
-    borderRadius: 5,
-    marginTop: 10,
-    alignItems: "center",
-  },
-  addButtonText: { color: "#fff", fontWeight: "bold" },
-  closeButton: {
-    backgroundColor: "#FF5722",
-    padding: 10,
-    borderRadius: 5,
-    marginTop: 10,
-    alignItems: "center",
-  },
-  closeButtonText: { color: "#fff", fontWeight: "bold" },
+  eventText: { flex: 1, color: "#2D3436", fontSize: 15 },
+  eventActions: { flexDirection: "row", gap: 10 },
+  iconBtn: { padding: 5 },
 });
 
 export default HomeScreen;

@@ -43,3 +43,8 @@ npm install react-native-calendars react-native-vector-icons react-native-popup-
 
 # khai báo thư viện bài 11
 npm install expo expo-av react-native-vector-icons @react-navigation/native @react-navigation/stack react-native-gesture-handler react-native-reanimated @react-native-community/slider react-native-screens
+
+# khai báo thư viện màu kết hợp
+npm install expo-linear-gradient
+
+npm install lucide-react-native
