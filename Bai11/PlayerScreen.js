@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -7,84 +7,137 @@ import {
   TouchableOpacity,
   Animated,
   Easing,
+  StatusBar,
+  Dimensions,
 } from "react-native";
 import { Audio } from "expo-av";
-import { Ionicons } from "react-native-vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import Slider from "@react-native-community/slider";
+import { LinearGradient } from "expo-linear-gradient"; // Cần: npx expo install expo-linear-gradient
 
-// Danh sách các bài hát ONLINE (Dùng chung bộ data với HomeScreen)
+const { width } = Dimensions.get("window");
+
 const songs = [
+  // ... (Giữ nguyên danh sách bài hát của bạn)
   {
     id: "1",
     title: "Acoustic Guitar",
+    artist: "Corporate Music",
     artwork: {
-      uri: "https://cdn.pixabay.com/audio/2022/08/31/21-14-11-205_200x200.jpg",
+      uri: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ_SdZWIMacymfJuZ19Zxc-vwmlbHZCSOzCLg&s",
     },
     url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
   },
   {
     id: "2",
     title: "Chill Lofi",
+    artist: "Lofi Study",
     artwork: {
-      uri: "https://cdn.pixabay.com/audio/2022/05/27/23-51-43-941_200x200.jpg",
+      uri: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTiwynYg4HMA3FzKQA8KI73Netabg2RuHI5jw&s",
     },
     url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
   },
   {
     id: "3",
     title: "Summer Walk",
+    artist: "Olexy",
     artwork: {
-      uri: "https://cdn.pixabay.com/audio/2022/03/10/13-27-33-314_200x200.jpg",
+      uri: "https://img.pikbest.com/png-images/20250401/music-logo-beautiful-note-musical-vector-illustration-sound-icon_11641164.png!f305cw",
     },
     url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+  },
+  {
+    id: "4",
+    title: "Tropical Fusion",
+    artist: "Mix",
+    artwork: {
+      uri: "https://img.pikbest.com/ai/illus_our/20230423/ad956650ba24abea110d2c9a554bd822.jpg!w700wp",
+    },
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
+  },
+  {
+    id: "5",
+    title: "Deep Night",
+    artist: "Electronic",
+    artwork: {
+      uri: "https://cdn2.baodongthap.vn/image/news/2024/20240111/fckimage/images1922434-23r.jpg",
+    },
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3",
   },
 ];
 
 const PlayerScreen = ({ route, navigation }) => {
-  const { song, index } = route.params;
-  const [sound, setSound] = useState(null);
+  const { song, index, autoPlay = false } = route.params;
+  const soundRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [rotateValue] = useState(new Animated.Value(0)); // Dùng const cho Animated Value
+  const rotateValue = useRef(new Animated.Value(0)).current;
   const [shuffle, setShuffle] = useState(false);
   const [repeat, setRepeat] = useState(false);
   const [duration, setDuration] = useState(0);
   const [position, setPosition] = useState(0);
 
+  // Logic phát nhạc (Giữ nguyên các hàm: replaySound, nextTrack, onPlaybackStatusUpdate, useEffect load nhạc)
+  // ... [Giữ nguyên phần Logic của bạn để đảm bảo app chạy đúng] ...
+
+  const replaySound = async () => {
+    if (!soundRef.current) return;
+    await soundRef.current.setPositionAsync(0);
+    await soundRef.current.playAsync();
+  };
+
+  const nextTrack = () => {
+    const nextIndex = shuffle
+      ? Math.floor(Math.random() * songs.length)
+      : (index + 1) % songs.length;
+    navigation.navigate("Player", {
+      song: songs[nextIndex],
+      index: nextIndex,
+      autoPlay: true,
+    });
+  };
+
+  const onPlaybackStatusUpdate = (status) => {
+    if (!status.isLoaded) return;
+    setPosition(status.positionMillis);
+    setDuration(status.durationMillis || 0);
+    setIsPlaying(status.isPlaying);
+    if (status.didJustFinish) {
+      repeat ? replaySound() : nextTrack();
+    }
+  };
+
   useEffect(() => {
+    let isMounted = true;
     const loadSound = async () => {
-      // GIẢI PHÓNG âm thanh cũ trước khi load bài mới
-      if (sound) {
-        await sound.unloadAsync();
+      if (soundRef.current) {
+        await soundRef.current.unloadAsync();
+        soundRef.current = null;
       }
-
-      // LOAD NHẠC TỪ URL ONLINE
       const { sound: newSound } = await Audio.Sound.createAsync(
-        { uri: song.url }, // Chỉnh sửa từ require sang uri
-        { shouldPlay: true },
+        { uri: song.url },
+        { shouldPlay: autoPlay },
       );
-
-      setSound(newSound);
-      setIsPlaying(true);
-
-      newSound.setOnPlaybackStatusUpdate(onPlaybackStatusUpdate);
-    };
-
-    loadSound();
-
-    return () => {
-      if (sound) {
-        sound.unloadAsync();
+      if (!isMounted) {
+        await newSound.unloadAsync();
+        return;
       }
+      newSound.setOnPlaybackStatusUpdate(onPlaybackStatusUpdate);
+      soundRef.current = newSound;
+      setIsPlaying(autoPlay);
     };
-  }, [song]); // Chạy lại mỗi khi bài hát thay đổi
+    loadSound();
+    return () => {
+      isMounted = false;
+      if (soundRef.current) soundRef.current.unloadAsync();
+    };
+  }, [song]);
 
-  // Hiệu ứng xoay đĩa nhạc
   useEffect(() => {
     if (isPlaying) {
       Animated.loop(
         Animated.timing(rotateValue, {
           toValue: 1,
-          duration: 10000,
+          duration: 12000,
           easing: Easing.linear,
           useNativeDriver: true,
         }),
@@ -94,54 +147,25 @@ const PlayerScreen = ({ route, navigation }) => {
     }
   }, [isPlaying]);
 
-  const onPlaybackStatusUpdate = (status) => {
-    if (status.isLoaded) {
-      setPosition(status.positionMillis);
-      setDuration(status.durationMillis);
-
-      if (status.didJustFinish) {
-        if (repeat) {
-          replaySound();
-        } else {
-          nextTrack();
-        }
-      }
-    }
-  };
-
-  const replaySound = async () => {
-    if (sound) {
-      await sound.setPositionAsync(0);
-      await sound.playAsync();
-    }
-  };
-
   const playPauseSound = async () => {
-    if (!sound) return;
-    if (isPlaying) {
-      await sound.pauseAsync();
-    } else {
-      await sound.playAsync();
-    }
-    setIsPlaying(!isPlaying);
-  };
-
-  const nextTrack = () => {
-    const nextIndex = shuffle
-      ? Math.floor(Math.random() * songs.length)
-      : (index + 1) % songs.length;
-    navigation.navigate("Player", { song: songs[nextIndex], index: nextIndex });
+    if (!soundRef.current) return;
+    isPlaying
+      ? await soundRef.current.pauseAsync()
+      : await soundRef.current.playAsync();
   };
 
   const previousTrack = () => {
     const prevIndex = (index - 1 + songs.length) % songs.length;
-    navigation.navigate("Player", { song: songs[prevIndex], index: prevIndex });
+    navigation.navigate("Player", {
+      song: songs[prevIndex],
+      index: prevIndex,
+      autoPlay: true,
+    });
   };
 
   const seekToPosition = async (value) => {
-    if (sound) {
-      await sound.setPositionAsync(value);
-    }
+    if (!soundRef.current) return;
+    await soundRef.current.setPositionAsync(value);
   };
 
   const rotateInterpolate = rotateValue.interpolate({
@@ -149,7 +173,6 @@ const PlayerScreen = ({ route, navigation }) => {
     outputRange: ["0deg", "360deg"],
   });
 
-  // Hàm format thời gian (ms -> mm:ss)
   const formatTime = (millis) => {
     const minutes = Math.floor(millis / 60000);
     const seconds = ((millis % 60000) / 1000).toFixed(0);
@@ -157,123 +180,188 @@ const PlayerScreen = ({ route, navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
-      <Animated.Image
-        source={song.artwork} // Nhận object {uri: ...}
-        style={[styles.artwork, { transform: [{ rotate: rotateInterpolate }] }]}
-      />
-      <Text style={styles.title}>{song.title}</Text>
+    <LinearGradient colors={["#2c3e50", "#000000"]} style={styles.container}>
+      <StatusBar barStyle="light-content" />
 
-      <Text style={styles.timeText}>
-        {formatTime(position)} / {formatTime(duration)}
-      </Text>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>ĐANG PHÁT</Text>
+        <TouchableOpacity>
+          <Ionicons name="ellipsis-horizontal" size={25} color="white" />
+        </TouchableOpacity>
+      </View>
 
-      <Slider
-        style={styles.slider}
-        minimumValue={0}
-        maximumValue={duration || 1}
-        value={position}
-        onSlidingComplete={seekToPosition}
-        minimumTrackTintColor="#1EB1FC"
-        maximumTrackTintColor="#d3d3d3"
-      />
+      {/* Disk Artwork */}
+      <View style={styles.artworkContainer}>
+        <Animated.Image
+          source={song.artwork}
+          style={[
+            styles.artwork,
+            { transform: [{ rotate: rotateInterpolate }] },
+          ]}
+        />
+        <View style={styles.diskCenter} />
+      </View>
 
+      {/* Info */}
+      <View style={styles.infoContainer}>
+        <Text numberOfLines={1} style={styles.title}>
+          {song.title}
+        </Text>
+        <Text style={styles.artist}>{song.artist || "Unknown Artist"}</Text>
+      </View>
+
+      {/* Slider */}
+      <View style={styles.sliderContainer}>
+        <Slider
+          style={styles.slider}
+          minimumValue={0}
+          maximumValue={duration || 1}
+          value={position}
+          onSlidingComplete={seekToPosition}
+          minimumTrackTintColor="#A29BFE"
+          maximumTrackTintColor="rgba(255,255,255,0.2)"
+          thumbTintColor="#A29BFE"
+        />
+        <View style={styles.timeRow}>
+          <Text style={styles.timeText}>{formatTime(position)}</Text>
+          <Text style={styles.timeText}>{formatTime(duration)}</Text>
+        </View>
+      </View>
+
+      {/* Controls */}
       <View style={styles.controls}>
-        <TouchableOpacity onPress={previousTrack}>
-          <Ionicons name="play-skip-back-outline" size={40} color="black" />
+        <TouchableOpacity onPress={() => setShuffle(!shuffle)}>
+          <Ionicons
+            name="shuffle"
+            size={24}
+            color={shuffle ? "#A29BFE" : "white"}
+          />
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={playPauseSound}>
+        <TouchableOpacity onPress={previousTrack}>
+          <Ionicons name="play-back" size={40} color="white" />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.playBtn} onPress={playPauseSound}>
           <Ionicons
-            name={isPlaying ? "pause-circle-outline" : "play-circle-outline"}
-            size={70}
-            color="black"
+            name={isPlaying ? "pause" : "play"}
+            size={40}
+            color="#2c3e50"
           />
         </TouchableOpacity>
 
         <TouchableOpacity onPress={nextTrack}>
-          <Ionicons name="play-skip-forward-outline" size={40} color="black" />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.options}>
-        <TouchableOpacity onPress={() => setShuffle(!shuffle)}>
-          <Ionicons
-            name="shuffle-outline"
-            size={25}
-            color={shuffle ? "blue" : "gray"}
-          />
-          <Text style={[styles.optionText, shuffle && styles.activeOption]}>
-            Shuffle
-          </Text>
+          <Ionicons name="play-forward" size={40} color="white" />
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => setRepeat(!repeat)}>
           <Ionicons
-            name="repeat-outline"
-            size={25}
-            color={repeat ? "blue" : "gray"}
+            name="repeat"
+            size={24}
+            color={repeat ? "#A29BFE" : "white"}
           />
-          <Text style={[styles.optionText, repeat && styles.activeOption]}>
-            Repeat
-          </Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingHorizontal: 25,
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#f5f5f5",
-    padding: 20,
+    marginTop: 50,
+  },
+  headerTitle: {
+    color: "rgba(255,255,255,0.6)",
+    fontSize: 12,
+    fontWeight: "bold",
+    letterSpacing: 2,
+  },
+  artworkContainer: {
+    alignItems: "center",
+    marginTop: 40,
+    // Hiệu ứng đổ bóng cho đĩa nhạc
+    shadowColor: "#A29BFE",
+    shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 0.3,
+    shadowRadius: 30,
+    elevation: 20,
   },
   artwork: {
-    width: 250,
-    height: 250,
-    borderRadius: 125,
-    marginBottom: 30,
+    width: width * 0.75,
+    height: width * 0.75,
+    borderRadius: (width * 0.75) / 2,
+    borderWidth: 8,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  diskCenter: {
+    position: "absolute",
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#2c3e50",
+    top: (width * 0.75) / 2 - 25,
     borderWidth: 5,
-    borderColor: "#ddd",
+    borderColor: "rgba(255,255,255,0.2)",
+  },
+  infoContainer: {
+    marginTop: 40,
+    alignItems: "center",
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: "bold",
+    color: "white",
     textAlign: "center",
   },
-  timeText: {
-    marginTop: 20,
-    fontSize: 16,
-    color: "#666",
+  artist: {
+    fontSize: 18,
+    color: "rgba(255,255,255,0.5)",
+    marginTop: 5,
+  },
+  sliderContainer: {
+    marginTop: 30,
+    width: "100%",
   },
   slider: {
-    width: "100%",
+    width: "105%",
     height: 40,
-    marginVertical: 10,
+    alignSelf: "center",
+  },
+  timeRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 5,
+  },
+  timeText: {
+    color: "rgba(255,255,255,0.4)",
+    fontSize: 12,
   },
   controls: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    width: "70%",
-    marginTop: 20,
-  },
-  options: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    width: "100%",
     marginTop: 40,
   },
-  optionText: {
-    fontSize: 12,
-    textAlign: "center",
-  },
-  activeOption: {
-    fontWeight: "bold",
-    color: "blue",
+  playBtn: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "white",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#fff",
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.5,
+    shadowRadius: 15,
+    elevation: 10,
   },
 });
 
