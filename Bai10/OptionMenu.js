@@ -4,7 +4,6 @@ import {
   TouchableOpacity,
   Text,
   StyleSheet,
-  Alert,
   Modal,
   BackHandler,
   Platform,
@@ -13,55 +12,73 @@ import {
 function OptionMenu() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
+  const [popupConfig, setPopupConfig] = useState({
+    visible: false,
+    title: "",
+    message: "",
+    buttonText: "OK",
+    onClose: null,
+  });
 
-  // --- LOGIC THOÁT ĐÃ ĐƯỢC CẬP NHẬT ---
+  const showPopup = ({ title, message, buttonText = "OK", onClose = null }) => {
+    setPopupConfig({
+      visible: true,
+      title,
+      message,
+      buttonText,
+      onClose,
+    });
+  };
+
+  const closePopup = () => {
+    const callback = popupConfig.onClose;
+
+    setPopupConfig((prev) => ({
+      ...prev,
+      visible: false,
+      onClose: null,
+    }));
+
+    if (callback) {
+      callback();
+    }
+  };
+
   const handleExitApp = () => {
     if (Platform.OS === "web") {
-      // 1. Thử đóng tab ngay lập tức
-      window.close();
-
-      // 2. Kiểm tra nếu tab vẫn chưa đóng (do trình duyệt chặn script không được mở bởi window.open)
-      // Chúng ta sẽ điều hướng đến một trang trống hoặc thông báo cho người dùng
-      setTimeout(() => {
-        if (!window.closed) {
-          alert(
-            "Trình duyệt đã chặn lệnh đóng tab tự động. Vui lòng đóng tab thủ công bằng dấu (x) trên trình duyệt của bạn.",
-          );
-          // Tùy chọn: Điều hướng về Google hoặc trang trắng để "giả lập" việc thoát
-          // window.location.href = "about:blank";
-        }
-      }, 500);
-    } else {
-      // Cho Android/iOS
-      BackHandler.exitApp();
+      showPopup({
+        title: "Thoát",
+        message: "Muốn đóng ứng dụng thì hãy tắt tab trình duyệt này.",
+      });
+      return;
     }
+
+    BackHandler.exitApp();
   };
 
   const handleMenuPress = (option) => {
     switch (option) {
-      case "Mode":
-        setIsDarkMode(!isDarkMode);
-        Alert.alert(
-          "Chế độ",
-          !isDarkMode ? "Chế độ tối đã được bật" : "Chế độ tối đã được tắt",
-        );
+      case "Mode": {
+        const nextMode = !isDarkMode;
+        setIsDarkMode(nextMode);
+        showPopup({
+          title: "Chế độ",
+          message: nextMode
+            ? "Chế độ tối đã được bật"
+            : "Chế độ sáng đã được bật",
+        });
         break;
+      }
       case "Info":
         setIsInfoModalVisible(true);
         break;
       case "Exit":
-        // Alert này hiển thị đồng nhất trên cả Web và Mobile
-        Alert.alert(
-          "Xác nhận",
-          "Bạn có chắc chắn muốn đóng ứng dụng/tab này không?",
-          [
-            { text: "Hủy", style: "cancel" },
-            {
-              text: "Đồng ý",
-              onPress: handleExitApp,
-            },
-          ],
-        );
+        showPopup({
+          title: "Thoát",
+          message: "Bạn có muốn đóng ứng dụng này không?",
+          buttonText: "Đóng",
+          onClose: handleExitApp,
+        });
         break;
       default:
         break;
@@ -73,14 +90,14 @@ function OptionMenu() {
       <TouchableOpacity
         style={[
           styles.optionButton,
-          { backgroundColor: isDarkMode ? "#555" : "#E3F2FD" },
+          isDarkMode ? styles.activeButton : styles.inactiveButton,
         ]}
         onPress={() => handleMenuPress("Mode")}
       >
         <Text
           style={[
             styles.optionText,
-            { color: isDarkMode ? "#fff" : "#6200EE" },
+            isDarkMode ? styles.activeText : styles.inactiveText,
           ]}
         >
           Chế độ
@@ -90,14 +107,14 @@ function OptionMenu() {
       <TouchableOpacity
         style={[
           styles.optionButton,
-          { backgroundColor: isDarkMode ? "#555" : "#E3F2FD" },
+          isDarkMode ? styles.activeButton : styles.inactiveButton,
         ]}
         onPress={() => handleMenuPress("Info")}
       >
         <Text
           style={[
             styles.optionText,
-            { color: isDarkMode ? "#fff" : "#6200EE" },
+            isDarkMode ? styles.activeText : styles.inactiveText,
           ]}
         >
           Thông tin
@@ -107,23 +124,42 @@ function OptionMenu() {
       <TouchableOpacity
         style={[
           styles.optionButton,
-          { backgroundColor: isDarkMode ? "#555" : "#E3F2FD" },
+          isDarkMode ? styles.activeButton : styles.inactiveButton,
         ]}
         onPress={() => handleMenuPress("Exit")}
       >
         <Text
           style={[
             styles.optionText,
-            { color: isDarkMode ? "#fff" : "#6200EE" },
+            isDarkMode ? styles.activeText : styles.inactiveText,
           ]}
         >
           Thoát
         </Text>
       </TouchableOpacity>
 
-      {/* Modal Thông Tin */}
       <Modal
-        transparent={true}
+        transparent
+        animationType="fade"
+        visible={popupConfig.visible}
+        onRequestClose={closePopup}
+      >
+        <View style={styles.popupOverlay}>
+          <View style={styles.popupCard}>
+            <Text style={styles.popupTitle}>{popupConfig.title}</Text>
+            <Text style={styles.popupMessage}>{popupConfig.message}</Text>
+
+            <TouchableOpacity style={styles.popupAction} onPress={closePopup}>
+              <Text style={styles.popupActionText}>
+                {popupConfig.buttonText}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        transparent
         animationType="fade"
         visible={isInfoModalVisible}
         onRequestClose={() => setIsInfoModalVisible(false)}
@@ -132,34 +168,46 @@ function OptionMenu() {
           <View
             style={[
               styles.modalContent,
-              { backgroundColor: isDarkMode ? "#333" : "white" },
+              { backgroundColor: isDarkMode ? "#333" : "#FFFFFF" },
             ]}
           >
             <Text
               style={[
                 styles.modalTitle,
-                { color: isDarkMode ? "#fff" : "#000" },
+                { color: isDarkMode ? "#FFFFFF" : "#000000" },
               ]}
             >
-              Thông Tin
+              Thông tin
             </Text>
             <Text
-              style={[styles.infoText, { color: isDarkMode ? "#ccc" : "#333" }]}
+              style={[
+                styles.infoText,
+                { color: isDarkMode ? "#D7D7D7" : "#333333" },
+              ]}
             >
               👤 Nguyễn Văn A
             </Text>
             <Text
-              style={[styles.infoText, { color: isDarkMode ? "#ccc" : "#333" }]}
+              style={[
+                styles.infoText,
+                { color: isDarkMode ? "#D7D7D7" : "#333333" },
+              ]}
             >
               🎂 20 tuổi
             </Text>
             <Text
-              style={[styles.infoText, { color: isDarkMode ? "#ccc" : "#333" }]}
+              style={[
+                styles.infoText,
+                { color: isDarkMode ? "#D7D7D7" : "#333333" },
+              ]}
             >
               🎓 Lớp: 20CTT1
             </Text>
             <Text
-              style={[styles.infoText, { color: isDarkMode ? "#ccc" : "#333" }]}
+              style={[
+                styles.infoText,
+                { color: isDarkMode ? "#D7D7D7" : "#333333" },
+              ]}
             >
               🆔 MSSV: 123456
             </Text>
@@ -185,14 +233,71 @@ const styles = StyleSheet.create({
   },
   optionButton: {
     marginHorizontal: 5,
-    padding: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
     borderRadius: 10,
     minWidth: 90,
     alignItems: "center",
   },
+  inactiveButton: {
+    backgroundColor: "#E3F2FD",
+  },
+  activeButton: {
+    backgroundColor: "#6200EE",
+  },
   optionText: {
     fontSize: 16,
     fontWeight: "600",
+  },
+  inactiveText: {
+    color: "#6200EE",
+  },
+  activeText: {
+    color: "#FFFFFF",
+  },
+  popupOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.35)",
+    paddingHorizontal: 20,
+  },
+  popupCard: {
+    width: "100%",
+    maxWidth: 320,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 4,
+    paddingTop: 18,
+    paddingHorizontal: 18,
+    paddingBottom: 12,
+    elevation: 8,
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+  },
+  popupTitle: {
+    fontSize: 24,
+    fontWeight: "500",
+    color: "#222222",
+    marginBottom: 10,
+  },
+  popupMessage: {
+    fontSize: 16,
+    color: "#555555",
+    lineHeight: 22,
+    marginBottom: 18,
+  },
+  popupAction: {
+    alignSelf: "flex-end",
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+  },
+  popupActionText: {
+    color: "#2196F3",
+    fontSize: 15,
+    fontWeight: "700",
+    textTransform: "uppercase",
   },
   modalContainer: {
     flex: 1,
@@ -224,7 +329,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   closeButtonText: {
-    color: "#fff",
+    color: "#FFFFFF",
     fontWeight: "bold",
   },
 });
